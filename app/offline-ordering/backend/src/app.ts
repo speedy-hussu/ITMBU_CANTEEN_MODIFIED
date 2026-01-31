@@ -5,11 +5,12 @@ import cookie from "@fastify/cookie";
 import websocket from "@fastify/websocket";
 
 //routes
-import itemRoutes from "./modules/item/route";
 import { authModule } from "./modules/auth/route";
+import itemRoutes from "./modules/item/route";
 
 //local ws server
 import { registerLocalGateway } from "./modules/websocket/gateway/local.gateway";
+import { CloudBridge } from "./modules/websocket/gateway/cloud.gateway";
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = fastify({
@@ -24,8 +25,12 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   await app.register(authModule, { prefix: "/api/auth" });
   await app.register(itemRoutes, { prefix: "/api/items" });
+
   await app.register(registerLocalGateway);
   console.log("registered local ws");
+
+  // CloudBridge.getInstance();
+  console.log("registered cloud ws");
 
   return app;
 }

@@ -9,6 +9,7 @@ import { authDecorator } from "./decorator/auth.decorator";
 // Routes
 import userItemRoute from "./modules/items/routes/user.route";
 import authRoutes from "./modules/auth/route";
+import { registerCloudWS } from "./ws/wsCloud";
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = fastify({
@@ -30,17 +31,17 @@ export async function buildApp(): Promise<FastifyInstance> {
   // ========== PLUGINS ==========
 
   // CORS - Allow credentials for cookies
-const isProduction = process.env.NODE_ENV === "production";
-await app.register(cors, {
-  // 1. Explicitly name your production URL
-  origin: isProduction ? "https://itmbu-canteen.vercel.app" : true,
+  const isProduction = process.env.NODE_ENV === "production";
+  await app.register(cors, {
+    // 1. Explicitly name your production URL
+    origin: isProduction ? "https://itmbu-canteen.vercel.app" : true,
 
-  credentials: true,
+    credentials: true,
 
-  // 2. Be explicit with headers so preflight doesn't fail
-  allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-});
+    // 2. Be explicit with headers so preflight doesn't fail
+    allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  });
   // Cookie parser
   await app.register(cookie, {
     secret: process.env.COOKIE_SECRET || "your-cookie-secret-key",
@@ -82,11 +83,7 @@ await app.register(cors, {
 
   console.log("☁️  Initializing Cloud WebSocket Server...\n");
 
-  // Dynamic import
-  const { registerCloudWebSocket } = await import("./ws/wsCloud");
-
-  // Register cloud websocket
-  await registerCloudWebSocket(app);
+  await app.register(registerCloudWS);
 
   console.log("✅ Cloud WebSocket Server registered\n");
 
@@ -132,9 +129,12 @@ await app.register(cors, {
 
   // Log all requests
   app.addHook("onRequest", async (request) => {
+    // Skip logging for WebSocket routes
+    if (request.url.startsWith("/ws/")) return;
+
     app.log.info(
       { url: request.url, method: request.method },
-      "Incoming request"
+      "Incoming request",
     );
   });
 
@@ -148,7 +148,7 @@ await app.register(cors, {
         statusCode: reply.statusCode,
         responseTime: `${responseTime}ms`,
       },
-      "Request completed"
+      "Request completed",
     );
   });
 

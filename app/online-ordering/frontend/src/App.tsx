@@ -87,7 +87,7 @@ function App() {
 
     setIsConnecting(true);
 
-    const socket = new WebSocket(import.meta.env.VITE_WS_BASE_URL);
+    const socket = new WebSocket("ws://localhost:40");
     socket.onopen = () => {
       console.log("✅ WebSocket connected");
       setIsConnecting(false);

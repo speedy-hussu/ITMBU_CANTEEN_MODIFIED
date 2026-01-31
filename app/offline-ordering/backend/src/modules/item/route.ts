@@ -1,6 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { getItemsController } from "./controllers/item.controller";
-import { ItemForm, StockItem } from "@shared/types/item.types";
 
 /**
  * Item routes – mounted with prefix, e.g. `/api/items` in the main app file.
@@ -8,7 +7,7 @@ import { ItemForm, StockItem } from "@shared/types/item.types";
 export default async function itemRoutes(app: FastifyInstance) {
   // Fetch all items
   app.get("/getItems", async (req: FastifyRequest, reply: FastifyReply) =>
-    getItemsController(app, req, reply)
+    getItemsController(app, req, reply),
   );
 
   // Create a new item

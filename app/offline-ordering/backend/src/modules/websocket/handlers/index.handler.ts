@@ -1,8 +1,9 @@
 import { WebSocket } from "ws";
 import { handleNewOrder } from "../handlers/new-order.handler";
-import { handleStatusUpdate } from "./order-status.handler";
+import { handleOrderStatusUpdate } from "./order-status.handler";
 import { ClientMeta } from "../shared/types";
 import { WSMessage, WSEvent } from "@shared/types/websocket.types";
+import { handleItemStatusUpdate } from "./item-status.handle";
 
 export async function handleWSMessage(
   socket: WebSocket,
@@ -18,8 +19,11 @@ export async function handleWSMessage(
       // Unified handler for POS and CLOUD orders
       return await handleNewOrder(socket, payload, meta);
 
-    case "update_status":
-      return await handleStatusUpdate(socket, payload, meta);
+    case "order_update":
+      return await handleOrderStatusUpdate(socket, payload, meta);
+
+    case "item_update":
+      return await handleItemStatusUpdate(socket, payload, meta);
 
     case "ping":
       socket.send(

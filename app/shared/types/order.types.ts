@@ -14,9 +14,10 @@ export interface OrderBase<I> {
   token: string;
   items: I[];
   totalAmount: number;
+  refundedAmount: number;
   status: OrderStatus;
   source: OrderSource;
-  synced: boolean;
+  isSyncedToCloudDB: boolean;
   createdAt: string; //for kds sorting
 }
 

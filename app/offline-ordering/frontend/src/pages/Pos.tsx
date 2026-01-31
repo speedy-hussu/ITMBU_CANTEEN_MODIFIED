@@ -5,12 +5,17 @@ import { toast } from "sonner";
 // Importing your shared types as defined in our latest conversation
 import type {
   WSMessage,
-  UpdateStatusPayload,
+  UpdateOrderStatusPayload,
 } from "../../../../shared/types/websocket.types";
+import { NotificationSidebar } from "@/components/pos/notification-sidebar";
+import { useNotificationStore } from "@/store/notificationStore";
+
 export default function Pos() {
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [isConnecting, setIsConnecting] = useState(true);
-  const [connectionError, setConnectionError] = useState(true); // Start with error state until connection is established
+  const [connectionError, setConnectionError] = useState(true);
+
+  const { syncNotification } = useNotificationStore();
 
   // WebSocket Connection Setup
   useEffect(() => {
@@ -18,32 +23,26 @@ export default function Pos() {
     const socket = new WebSocket(
       "ws://localhost:4000/ws/local?role=LOCAL&deviceId=POS_1",
     );
-
     socket.onopen = () => {
       console.log("✅ POS Connected");
       setIsConnecting(false);
       setConnectionError(false);
     };
-
     socket.onerror = () => {
       setConnectionError(true);
       setIsConnecting(false);
     };
-
     socket.onclose = () => {
       setConnectionError(true);
       setIsConnecting(false);
     };
-
     setWs(socket);
     return () => socket.close();
   }, []);
-
   // Message Handler logic aligned with KDS Token system
   useEffect(() => {
     if (!ws) return;
-
-    const handleStatusUpdate = (payload: UpdateStatusPayload) => {
+    const handleStatusUpdate = (payload: UpdateOrderStatusPayload) => {
       const { token, status } = payload;
 
       // 1. Early return if status is unknown
@@ -66,7 +65,6 @@ export default function Pos() {
       };
 
       const config = toastConfig[status as keyof typeof toastConfig];
-
       if (config) {
         toast[config.type as "success" | "error"](config.message, {
           description: config.description,
@@ -75,40 +73,47 @@ export default function Pos() {
         });
       }
     };
-
     const handleMessage = (event: MessageEvent) => {
       try {
         const msg = JSON.parse(event.data) as WSMessage;
+        const syncNotification =
+          useNotificationStore.getState().syncNotification;
 
         switch (msg.event) {
           case "new_order":
-            // Accessing _id here if needed for local tracking
             toast.success(`Order #${msg.payload.token} sent to kitchen!`, {
               icon: "🍳",
             });
             break;
 
-          case "update_status":
-            console.log("status update called", msg.payload);
-            handleStatusUpdate(msg.payload as UpdateStatusPayload);
+          case "order_update":
+          case "item_update":
+            // Both now use the same logic: find by _id and update/insert [cite: 2026-01-25]
+            syncNotification(msg.payload);
+
+            // Custom alerts for rejections
+            if (msg.payload.refundedAmount > 0) {
+              toast.error(
+                `Refund Due for #${msg.payload.token}: ₹${msg.payload.refundedAmount}`,
+              );
+            }
             break;
+
           case "order_ack":
-            console.log("order ack called", msg.payload);
-            toast.success(`Order ${msg.payload.token} send to kitchen`);
+            toast.success(`Kitchen received Order #${msg.payload.token}`);
             break;
 
           default:
-            console.log("Unhandled POS Event:", msg.event);
+            console.log("Unhandled Event:", msg.event);
         }
       } catch (err) {
-        console.error("Failed to parse POS message", err);
+        console.error("WS Parse Error", err);
       }
     };
 
     ws.addEventListener("message", handleMessage);
     return () => ws.removeEventListener("message", handleMessage);
   }, [ws]);
-
   if (isConnecting)
     return (
       <div className="min-h-screen text-white grid place-items-center text-4xl bg-gradient-primary">
@@ -118,9 +123,12 @@ export default function Pos() {
         </div>
       </div>
     );
+
   return (
     <div className="h-dvh w-full flex">
+      <NotificationSidebar />
       <Menu />
+
       <Cart ws={ws} connectionError={connectionError} />
     </div>
   );

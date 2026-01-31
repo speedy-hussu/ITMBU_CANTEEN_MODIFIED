@@ -1,18 +1,18 @@
 import { OrderService } from "src/modules/order/order.service";
 import { ClientMeta } from "../shared/types";
 import {
-  UpdateStatusPayload,
+  UpdateOrderStatusPayload,
   WSMessage,
   ErrorPayload,
 } from "@shared/types/websocket.types";
 import type { WebSocket } from "ws";
 
-export async function handleStatusUpdate(
+export async function handleOrderStatusUpdate(
   socket: WebSocket,
-  payload: UpdateStatusPayload,
+  payload: UpdateOrderStatusPayload,
   meta: ClientMeta,
 ) {
-  console.log("handleStatusUpdate called:", { payload, meta });
+  console.log("handleOrderUpdateStatus called:", { payload, meta });
 
   // 1. SECURITY: Only KDS can update status
   if (meta.role !== "KDS") {
@@ -62,5 +62,5 @@ export async function handleStatusUpdate(
   );
 
   // 3. EXECUTION: Now call the service
-  await OrderService.getInstance().updateStatus(orderId, payload.status);
+  await OrderService.getInstance().orderUpdateStatus(orderId, payload.status);
 }

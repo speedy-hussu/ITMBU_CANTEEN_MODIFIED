@@ -8,7 +8,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import type {
   WSMessage,
-  UpdateStatusPayload,
+  UpdateOrderStatusPayload,
 } from "../../../../shared/types/websocket.types";
 import type { DbOrder } from "../../../../shared/types/order.types";
 
@@ -35,27 +35,22 @@ export default function Orders() {
 
     socket.onerror = () => setConnectionError(true);
     socket.onclose = () => setConnectionError(true);
-
     setWs(socket);
     return () => socket.close();
   }, []);
-
   // Event Listener
   useEffect(() => {
     if (!ws) return;
-
     const handleMessage = (event: MessageEvent) => {
       try {
         const msg = JSON.parse(event.data) as WSMessage;
-
         switch (msg.event) {
           case "new_order":
             // Per your instructions: all orders (Local/Cloud) treated as new_order
             addOrder(msg.payload as DbOrder);
             break;
-
-          case "update_status":
-            const { token, status } = msg.payload as UpdateStatusPayload;
+          case "order_update":
+            const { token, status } = msg.payload as UpdateOrderStatusPayload;
             if (token) {
               // Update status without deleting/removing anything
               updateOrder(token, status);
@@ -98,7 +93,7 @@ export default function Orders() {
 
   return (
     <div className="min-h-screen w-full bg-gradient-primary text-white">
-      <div className="flex h-15 gap-10 p-3  items-center">
+      <div className="flex gap-10 p-3  items-center">
         <div className="flex items-center gap-2">
           {connectionError ? (
             <WifiOff className="text-red-300" />
@@ -118,7 +113,7 @@ export default function Orders() {
             <TabsList className="bg-white/20 border-white/30">
               <TabsTrigger
                 value="IN QUEUE"
-                className="data-[state=active]:bg-white data-[state=active]:text-[#667eea] relative"
+                className="data-[state=active]:bg-white text-white data-[state=active]:text-[#667eea] relative"
               >
                 IN QUEUE
                 {pendingCount > 0 && (
@@ -132,7 +127,7 @@ export default function Orders() {
               </TabsTrigger>
               <TabsTrigger
                 value="COMPLETED"
-                className="data-[state=active]:bg-white data-[state=active]:text-[#667eea] relative"
+                className="data-[state=active]:bg-white text-white data-[state=active]:text-[#667eea] relative"
               >
                 COMPLETED
                 {completedCount > 0 && (
@@ -146,7 +141,6 @@ export default function Orders() {
               </TabsTrigger>
             </TabsList>
           </Tabs>
-
           <div className="relative flex-1 min-w-[250px] max-w-md">
             <Search className="absolute z-10 top-1/2 left-3 transform -translate-y-1/2 text-white/70" />
             <Input
@@ -180,7 +174,7 @@ export default function Orders() {
         </div>
       ) : (
         <div
-          className="h-[calc(100vh-100px)] overflow-y-auto
+          className="h-[calc(100vh-100px)] overflow-y-auto 
           grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))]
           gap-6 px-5 pb-5
           [&::-webkit-scrollbar]:w-2 

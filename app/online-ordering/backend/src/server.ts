@@ -1,23 +1,22 @@
 import "dotenv/config";
 import { buildApp } from "./app";
 // import cloudDB from "./database/connections/cloudDB.connection";
-const PORT = Number(process.env.PORT) || 4000;
+const PORT = Number(process.env.PORT) || 5000;
 const HOST = process.env.HOST || "0.0.0.0";
 
 async function start() {
   try {
     const app = await buildApp();
-        // await new Promise<void>((resolve, reject) => {
-        //   cloudDB.once("open", () => {
-        //     console.log("✅ MongoDB cloud connected");
-        //     resolve();
-        //   });
-        //   cloudDB.on("error", (err) => {
-        //     console.error("❌ MongoDB connection error:", err);
-        //     reject(err);
-        //   });
-        // });
-
+    // await new Promise<void>((resolve, reject) => {
+    //   cloudDB.once("open", () => {
+    //     console.log("✅ MongoDB cloud connected");
+    //     resolve();
+    //   });
+    //   cloudDB.on("error", (err) => {
+    //     console.error("❌ MongoDB connection error:", err);
+    //     reject(err);
+    //   });
+    // });
 
     await app.listen({ port: PORT, host: HOST });
 

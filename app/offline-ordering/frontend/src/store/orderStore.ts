@@ -4,36 +4,37 @@ import type {
   KdsOrderPayload,
   OrderStatus,
 } from "@shared/types/order.types";
+import type { ItemStatus } from "@shared/types/item.types";
 
 interface OrdersState {
   orders: KdsOrderPayload[];
   TotalOrders: number;
-
-  // Handlers
   addOrder: (order: DbOrder) => void;
   setOrders: (orders: DbOrder[]) => void;
-  updateOrder: (token: string, status: OrderStatus) => void;
-  removeOrder: (token: string) => void;
-
-  // KDS Specific Logic
-  toggleItemChecked: (orderId: string, itemIndex: number) => void;
-  isAllItemsChecked: (orderId: string) => boolean;
+  updateOrder: (orderId: string, status: OrderStatus) => void;
+  removeOrder: (orderId: string) => void;
+  toggleItemStatus: (orderId: string, itemId: string) => void;
+  updateItemStatus: (
+    orderId: string,
+    itemId: string,
+    status: ItemStatus,
+  ) => void;
 }
 
-export const useOrdersStore = create<OrdersState>((set, get) => ({
+export const useOrdersStore = create<OrdersState>((set) => ({
   orders: [],
   TotalOrders: 0,
 
-  // Map incoming DbOrder (CartItem) to KdsOrderPayload (KdsItem)
   addOrder: (newOrder) =>
     set((state) => {
-      if (state.orders.some((o) => o.token === newOrder.token)) return state;
-
+      if (state.orders.some((o) => o._id === newOrder._id)) return state;
       const kdsOrder: KdsOrderPayload = {
         ...newOrder,
-        items: newOrder.items.map((item) => ({ ...item, checked: false })),
+        items: newOrder.items.map((item) => ({
+          ...item,
+          status: item.status || "PREPARING",
+        })),
       };
-
       return {
         orders: [kdsOrder, ...state.orders],
         TotalOrders: state.TotalOrders + 1,
@@ -44,61 +45,54 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
     set({
       orders: dbOrders.map((order) => ({
         ...order,
-        items: order.items.map((item) => ({ ...item, checked: false })),
+        items: order.items.map((item) => ({
+          ...item,
+          status: item.status || "PREPARING",
+        })),
       })),
       TotalOrders: dbOrders.length,
     }),
 
-  updateOrder: (token, status) =>
+  updateOrder: (orderId, status) =>
     set((state) => ({
       orders: state.orders.map((o) =>
-        o.token === token ? { ...o, status } : o,
+        o._id === orderId ? { ...o, status } : o,
       ),
     })),
 
-  toggleItemChecked: (orderId, itemIndex) =>
-    set((state) => {
-      console.log("toggleItemChecked called:", { orderId, itemIndex });
-      const newState = {
-        orders: state.orders.map((o) => {
-          if (o.token !== orderId) return o;
-          const newItems = [...o.items];
-          const previousChecked = newItems[itemIndex].checked;
-          newItems[itemIndex].checked = !newItems[itemIndex].checked;
-          console.log("Toggling item:", {
-            orderId,
-            itemIndex,
-            itemName: newItems[itemIndex].name,
-            previousChecked,
-            newChecked: newItems[itemIndex].checked,
-          });
-          return { ...o, items: newItems };
-        }),
-      };
-      console.log(
-        "New state after toggle:",
-        newState.orders.find((o) => o.token === orderId)?.items,
-      );
-      return newState;
-    }),
+  toggleItemStatus: (orderId, itemId) =>
+    set((state) => ({
+      orders: state.orders.map((o) => {
+        if (o._id !== orderId) return o;
+        return {
+          ...o,
+          items: o.items.map((item) => {
+            if (item._id !== itemId || item.status === "REJECTED") return item;
+            return {
+              ...item,
+              status: item.status === "PREPARED" ? "PREPARING" : "PREPARED",
+            };
+          }),
+        };
+      }),
+    })),
 
-  isAllItemsChecked: (orderId) => {
-    const order = get().orders.find((o) => o.token === orderId);
-    return !!order && order.items.every((i) => i.checked);
-  },
+  updateItemStatus: (orderId, itemId, status) =>
+    set((state) => ({
+      orders: state.orders.map((o) => {
+        if (o._id !== orderId) return o;
+        return {
+          ...o,
+          items: o.items.map((item) =>
+            item._id === itemId ? { ...item, status } : item,
+          ),
+        };
+      }),
+    })),
 
-  removeOrder: (token) =>
+  removeOrder: (orderId) =>
     set((state) => {
-      console.log("removeOrder called:", { token });
-      console.log(
-        "Current orders:",
-        state.orders.map((o) => ({ _id: o._id, token: o.token })),
-      );
-      const remaining = state.orders.filter((o) => o.token !== token);
-      console.log(
-        "Remaining orders after removal:",
-        remaining.map((o) => ({ _id: o._id, token: o.token })),
-      );
+      const remaining = state.orders.filter((o) => o._id !== orderId);
       return { orders: remaining, TotalOrders: remaining.length };
     }),
 }));

@@ -7,6 +7,11 @@ const OrderItemSchema = new Schema(
     price: { type: Number, required: true, min: 0 },
     category: { type: String, required: true },
     quantity: { type: Number, required: true, min: 1 },
+    status: {
+      type: String,
+      enum: ["PREPARING", "REJECTED", "PREPARED"],
+      default: "PREPARING",
+    },
   },
   { _id: false },
 );
@@ -28,6 +33,7 @@ const OrderSchema = new Schema(
       },
     },
     totalAmount: { type: Number, required: true, min: 0 },
+    refundedAmount: { type: Number, default: 0, min: 0 },
     status: {
       type: String,
       // 👽 Updated to match your shared types logic

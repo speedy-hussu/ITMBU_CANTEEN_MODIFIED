@@ -23,120 +23,169 @@ interface Props {
 }
 
 export default function OrderCard({ order, ws }: Props) {
-  const { updateOrder, toggleItemChecked, removeOrder } = useOrdersStore();
+  const { updateOrder, toggleItemStatus, removeOrder, updateItemStatus } =
+    useOrdersStore();
 
   const isCompleted = order.status === "COMPLETED";
 
-  // Directly use the order prop - Zustand's state management ensures this is reactive
-  const allChecked =
-    order.items.length > 0 && order.items.every((item) => item.checked);
-  const canComplete = !isCompleted && allChecked;
+  // 1. Logic: Order can be "Done" if all non-rejected items are "PREPARED"
+  const activeItems = order.items.filter((item) => item.status !== "REJECTED");
+  const allPrepared =
+    activeItems.length > 0 &&
+    activeItems.every((item) => item.status === "PREPARED");
+  const canComplete = !isCompleted && allPrepared;
 
+  /**
+   * Finalizes the order and notifies the backend.
+   */
   const handleDone = () => {
     if (!ws || ws.readyState !== WebSocket.OPEN) {
       toast.error("Kitchen Server Offline");
       return;
     }
 
-    // 1. Update local store by token
-    updateOrder(order.token, "COMPLETED");
+    // Update local state
+    updateOrder(order._id, "COMPLETED");
 
-    // 2. Notify backend using the token
+    // Notify backend
     ws.send(
       JSON.stringify({
-        event: "update_status",
+        event: "order_update",
         payload: {
           _id: order._id,
           status: "COMPLETED",
         },
       }),
     );
-
-    toast.success(`Order #${order.token} is ready!`);
+    toast.success(`Order #${order.token} marked as Ready`);
   };
 
+  /**
+   * Completely removes the order from KDS (Cancelled).
+   */
   const handleCancel = () => {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
 
-    // Remove from local store
-    removeOrder(order.token);
+    removeOrder(order._id);
 
-    // Notify backend
     ws.send(
       JSON.stringify({
-        event: "update_status",
-        payload: { _id: order._id, status: "CANCELLED" },
+        event: "order_update",
+        payload: {
+          _id: order._id,
+          status: "CANCELLED",
+        },
       }),
     );
 
-    toast.error(`Order #${order.token} removed`);
+    toast.error(`Order #${order.token} cancelled`);
+  };
+
+  /**
+   * Rejects a single item and triggers the refund notification flow.
+   */
+  const handleRejectItem = (itemId: string) => {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      toast.error("Kitchen Server Offline");
+      return;
+    }
+
+    // Update local state immediately
+    updateItemStatus(order._id, itemId, "REJECTED");
+
+    // Send item update event
+    ws.send(
+      JSON.stringify({
+        event: "item_update",
+        payload: {
+          orderId: order._id,
+          itemId: itemId,
+          status: "REJECTED",
+        },
+      }),
+    );
+
+    toast.info("Item rejected - Notification sent to POS");
   };
 
   return (
     <Card
-      className="text-[#333] relative h-65 flex flex-col gap-0 justify-between bg-white p-3 
-    rounded-xl  transition duration-300 ease-in-out shadow-sm border"
+      className="text-[#333] relative h-72 flex flex-col justify-between bg-white p-4 
+    rounded-xl transition duration-300 ease-in-out shadow-sm border"
     >
       <div>
-        <h1 className="text-center text-2xl font-bold">#{order.token}</h1>
+        {/* Header Section */}
+        <div className="flex justify-between items-center mb-2">
+          <h1 className="text-2xl font-black">#{order.token}</h1>
+          <span
+            className={`text-xs px-2 py-0.5 rounded-full font-bold uppercase ${
+              order.source === "CLOUD"
+                ? "bg-blue-100 text-blue-600"
+                : "bg-gray-100 text-gray-600"
+            }`}
+          >
+            {order.source}
+          </span>
+        </div>
 
-        {order.status === "COMPLETED" ? null : (
+        {/* Cancel Order Icon (X) */}
+        {!isCompleted && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <X className="absolute text-xl top-2 right-2 text-red-500 cursor-pointer hover:text-red-600 transition-colors" />
+              <X className="absolute top-4 right-4 text-gray-400 cursor-pointer hover:text-red-500 transition-colors" />
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Remove Order</AlertDialogTitle>
+                <AlertDialogTitle>Cancel Entire Order?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Are you sure you want to remove order #{order.token}? This
+                  This will remove Token #{order.token} from the KDS. This
                   action cannot be undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleCancel}>
-                  Remove
+                <AlertDialogCancel>Go Back</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleCancel}
+                  className="bg-red-500"
+                >
+                  Confirm Cancel
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
         )}
 
+        {/* Scrollable Items List */}
         <div
-          className="max-h-40 overflow-y-auto 
+          className="max-h-40 overflow-y-auto pr-1 
           [&::-webkit-scrollbar]:w-1 
-          [&::-webkit-scrollbar-thumb]:bg-gray-300 
+          [&::-webkit-scrollbar-thumb]:bg-gray-200 
           [&::-webkit-scrollbar-thumb]:rounded-full"
         >
-          <div className="rounded-lg overflow-hidden mr-1">
-            {order.items.map((item: any, index: number) => (
+          <div className="flex flex-col gap-1">
+            {order.items.map((item) => (
               <CardItem
-                key={index}
+                key={item._id}
                 name={item.name}
                 qty={item.quantity}
-                checked={
-                  order.status !== "COMPLETED" ? (item.checked ?? false) : false
-                }
-                onCheck={
-                  order.status !== "COMPLETED"
-                    ? () => toggleItemChecked(order.token, index)
-                    : () => {}
-                }
-                disabled={order.status === "COMPLETED"}
+                status={item.status}
+                onCheck={() => toggleItemStatus(order._id, item._id)}
+                onReject={() => handleRejectItem(item._id)}
+                disabled={isCompleted}
               />
             ))}
           </div>
         </div>
       </div>
 
+      {/* Action Button */}
       <Button
         className="w-full bg-gradient-to-r from-[#667eea] to-[#764ba2] 
             hover:from-[#5a6fd8] hover:to-[#6a3f8f] text-white font-semibold"
         disabled={!canComplete}
         onClick={handleDone}
       >
-        {isCompleted ? "✓ Completed" : "Mark as Done"}
+        {isCompleted ? "✓ Order Ready" : "Mark as Done"}
       </Button>
     </Card>
   );
