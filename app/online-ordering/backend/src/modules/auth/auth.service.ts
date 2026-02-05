@@ -1,25 +1,39 @@
-import bcrypt from "bcryptjs";
+// online/backend/src/services/auth.service.ts
+import { User } from "../../database/models/user.model";
 
 export const verifyUser = async (enrollmentId: string, password: string) => {
-  // Use .trim() to ensure no hidden spaces are messing up the hash
-  // 1. Log with markers to see hidden spaces
+  // 1. Normalize the Input
+  const inputID = enrollmentId.trim().toLowerCase();
+  const inputPass = password.trim();
 
-  const user = {
-    enrollmentId: "23C11036",
-    password: "Husain@17",
-  };
-  const inputID = enrollmentId.trim().toUpperCase();
-  const dbID = user.enrollmentId.trim().toUpperCase();
-  if (inputID !== dbID) {
-    console.log("❌ ID mismatch");
-    console.log(`Checking ID: |${enrollmentId}|`);
-    console.log(`Checking Pass: |${password}|`);
-    return null;
+  console.log(`🔍 Attempting login for: |${inputID}|`);
+
+  try {
+    // 2. Find the user in Atlas
+    const user = await User.findOne({ enrollmentId: inputID });
+
+    if (!user) {
+      console.log("❌ User not found in database");
+      return null;
+    }
+
+    // 3. Password Comparison
+    // Currently using direct comparison for your dummy data (pass1, pass2)
+    const isMatch = user.password === inputPass;
+
+    /** * NOTE: When you start using hashed passwords, use this instead:
+     * const isMatch = await bcrypt.compare(inputPass, user.password);
+     */
+
+    if (!isMatch) {
+      console.log(`❌ Password mismatch for ${inputID}`);
+      return null;
+    }
+
+    console.log(`✅ User verified: ${user.enrollmentId}`);
+    return user;
+  } catch (error) {
+    console.error("database Error during verification:", error);
+    throw error;
   }
-
-  // 2. Compare using the trimmed pass
-  const isMatch = user.password === password ? true : false;
-  console.log("🔍Match in Service:", isMatch);
-  console.log(user, "from service");
-  return isMatch ? user : null;
 };

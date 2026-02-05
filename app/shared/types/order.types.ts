@@ -12,6 +12,7 @@ export type OrderSource = "LOCAL" | "CLOUD";
 export interface OrderBase<I> {
   _id: string;
   token: string;
+  enrollmentId?: string;
   items: I[];
   totalAmount: number;
   refundedAmount: number;
@@ -24,7 +25,13 @@ export interface OrderBase<I> {
 // 2. What POS/Cloud sends
 export type PosOrderPayload = Omit<
   OrderBase<CartItem>,
-  "_id" | "status" | "source" | "synced" | "createdAt"
+  | "_id"
+  | "status"
+  | "source"
+  | "synced"
+  | "createdAt"
+  | "refundedAmount"
+  | "isSyncedToCloudDB"
 >;
 export type KdsOrderPayload = OrderBase<KdsItem>;
 

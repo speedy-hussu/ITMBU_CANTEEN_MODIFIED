@@ -29,8 +29,9 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(registerLocalGateway);
   console.log("registered local ws");
 
-  // CloudBridge.getInstance();
-  console.log("registered cloud ws");
+  await CloudBridge.getInstance();
+  // console.log("registered cloud ws");
+
 
   return app;
 }

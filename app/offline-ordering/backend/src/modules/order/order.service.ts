@@ -111,18 +111,31 @@ export class OrderService {
   }
 
   private notifyStatusChange(order: DbOrder): void {
-    const statusUpdate: WSMessage<any> = {
-      event: "order_update",
-      payload: {
-        _id: order._id,
-        token: order.token,
-        status: order.status,
-        refundedAmount: order.refundedAmount || 0, // Sending the saved value
-        rejectedCount: order.items.filter((i) => i.status === "REJECTED")
-          .length,
-      },
-    };
-    this.wsManager.broadcastToRole(order.source, statusUpdate);
+    if (order.source == "LOCAL") {
+      const posPayload: WSMessage<any> = {
+        event: "order_update",
+        payload: {
+          _id: order._id,
+          token: order.token,
+          status: order.status,
+          refundedAmount: order.refundedAmount || 0,
+        },
+      };
+      this.wsManager.broadcastToRole("LOCAL", posPayload);
+    } else if (order.source === "CLOUD" && order.enrollmentId) {
+      const cloudPayload: WSMessage<any> = {
+        event: "order_update",
+        payload: {
+          enrollmentId: order.enrollmentId,
+          _id: order._id,
+          token: order.token,
+          status: order.status,
+          refundedAmount: order.refundedAmount,
+          items: order.items,
+        },
+      };
+      this.wsManager.broadcastToRole("CLOUD", cloudPayload);
+    }
   }
 }
 

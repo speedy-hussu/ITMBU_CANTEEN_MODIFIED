@@ -12,7 +12,7 @@ interface CartItemProps {
   };
 }
 
-function CartItem({ item }: CartItemProps) {
+export default function AppCartItem({ item }: CartItemProps) {
   const { addToCart, removeFromCart } = useCartStore();
 
   return (
@@ -62,4 +62,3 @@ function CartItem({ item }: CartItemProps) {
   );
 }
 
-export default CartItem;

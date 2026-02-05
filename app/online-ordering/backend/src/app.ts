@@ -9,7 +9,7 @@ import { authDecorator } from "./decorator/auth.decorator";
 // Routes
 import userItemRoute from "./modules/items/routes/user.route";
 import authRoutes from "./modules/auth/route";
-import { registerCloudWS } from "./ws/wsCloud";
+import { registerCloudWS } from "./modules/ws/cloud-gateway";
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = fastify({

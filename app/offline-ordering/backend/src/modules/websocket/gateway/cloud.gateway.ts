@@ -1,14 +1,15 @@
-import { WebSocket } from "ws";
+// offline/backend/src/services/cloud-bridge.service.ts
+import ReconnectingWebSocket from "reconnecting-websocket";
+import WS from "ws";
 import { WSManager } from "../ws.manager";
 import { handleWSMessage } from "../handlers/index.handler";
+import { ClientRole } from "../shared/types";
 
 export class CloudBridge {
   private static instance: CloudBridge;
-  private ws: WebSocket | null = null;
-  private deviceId = "LOCAL_SERVER_01"; // Unique ID for this canteen
-  private role = "ONLINE" as any;
-  private retryGaps = [5000, 10000, 15000];
-  private retryAttempt = 0;
+  private rws: ReconnectingWebSocket | null = null;
+  private deviceId = "LOCAL_SERVER_01";
+  private role: ClientRole = "CLOUD";
 
   private constructor() {
     this.connect();
@@ -20,27 +21,35 @@ export class CloudBridge {
   }
 
   private connect() {
-    // We connect to the Cloud URL (Atlas)
-    const url = process.env.CLOUD_WS_URL || "ws://localhost:5000/ws/cloud";
-    console.log(`🔄 Attempting to connect to: ${url}`);
+    const url = process.env.CLOUD_WS_URL || "ws://localhost:5000/ws/bridge";
 
-    this.ws = new WebSocket(url);
-
-    this.ws.on("open", () => {
-      console.log("☁️ Connected to Cloud Gateway");
-      this.retryAttempt = 0;
-
-      // 1. Register this socket in your local WSManager
-      // This allows OrderService to send messages "OUT" to the cloud
-      WSManager.getInstance().addClient(this.deviceId, this.role, this.ws!);
+    this.rws = new ReconnectingWebSocket(url, [], {
+      WebSocket: WS,
+      connectionTimeout: 5000,
+      maxRetries: Infinity,
+      minReconnectionDelay: 5000,
+      maxReconnectionDelay: 60000,
+      reconnectionDelayGrowFactor: 1.3,
     });
 
-    this.ws.on("message", async (data) => {
+    this.rws.addEventListener("open", () => {
+      console.log("☁️ Connected to Cloud Gateway via RWS");
+      // Use this.rws.binaryType or just pass the instance.
+      // Note: WSManager needs to be okay with the RWS wrapper.
+      WSManager.getInstance().addClient(
+        this.deviceId,
+        this.role,
+        this.rws as any,
+      );
+    });
+
+    // Use { data } destructuring for cleaner code in Node.js
+    this.rws.addEventListener("message", ({ data }) => {
       try {
         const message = JSON.parse(data.toString());
-        // 2. Use your existing index.handler for "INCOMING" cloud orders
-        // This is where the 'new_order' from cloud gets processed
-        await handleWSMessage(this.ws!, message, {
+        // No need for 'await' if handleWSMessage isn't returning a promise
+        // but keeping it safe based on your previous snippets.
+        handleWSMessage(this.rws as any, message, {
           deviceId: this.deviceId,
           role: this.role,
         });
@@ -49,25 +58,13 @@ export class CloudBridge {
       }
     });
 
-    this.ws.on("close", () => {
-      console.log("❌ Cloud connection closed");
-      WSManager.getInstance().removeClient(this.deviceId);
-      this.scheduleReconnect();
+    this.rws.addEventListener("error", (err: any) => {
+      console.error("❌ RWS Error:", err.error?.message || err.message);
     });
 
-    this.ws.on("error", (error: Error) => {
-      console.error("❌ Cloud WebSocket error:", error.message);
+    this.rws.addEventListener("close", () => {
+      console.log("❌ Cloud connection lost. RWS will handle retry.");
       WSManager.getInstance().removeClient(this.deviceId);
-      this.scheduleReconnect();
     });
-  }
-
-  private scheduleReconnect() {
-    const delay =
-      this.retryGaps[Math.min(this.retryAttempt, this.retryGaps.length - 1)];
-    setTimeout(() => {
-      this.retryAttempt++;
-      this.connect();
-    }, delay);
   }
 }

@@ -21,14 +21,7 @@ import UserProfile from "./pages/Profile";
 import Nav from "./components/STUDENT/Nav";
 
 // Types
-import {
-  parseWebSocketMessage,
-  type ConnectionEstablishedPayload,
-  type KDSStatusPayload,
-  type OrderAckPayload,
-  type OrderCompletedPayload,
-  type OrderCancelledPayload,
-} from "@shared/types/websocket.types";
+import { type WSMessage } from "@shared/types/websocket.types";
 import { getMe, logoutUser } from "./api/api";
 
 const queryClient = new QueryClient();
@@ -87,7 +80,10 @@ function App() {
 
     setIsConnecting(true);
 
-    const socket = new WebSocket("ws://localhost:40");
+    const enrollmentId = user?.enrollmentId;
+    const socket = new WebSocket(
+      `ws://localhost:5000/ws/user?enrollmentId=${enrollmentId}`,
+    );
     socket.onopen = () => {
       console.log("✅ WebSocket connected");
       setIsConnecting(false);
@@ -95,54 +91,48 @@ function App() {
     };
 
     socket.onmessage = (msg) => {
-      const data = parseWebSocketMessage(msg.data);
-      if (!data) return;
+      try {
+        const data = JSON.parse(msg.data) as WSMessage;
+        if (!data?.event) return;
 
-      switch (data.type) {
-        case "connection_established":
-          const connPayload = data.payload as ConnectionEstablishedPayload;
-          setKdsOnline(connPayload?.kdsOnline || false);
-          break;
-
-        case "kds_status":
-          const statusPayload = data.payload as KDSStatusPayload;
-          setKdsOnline(statusPayload.online);
-          statusPayload.online
-            ? toast.success("Kitchen is online!")
-            : toast.warning("Kitchen went offline");
-          break;
-
-        case "order_ack":
-          const ack = data.payload as OrderAckPayload;
-          if (ack.success && ack.localOrderId && ack.cloudOrderId) {
-            updateOrderWithMongoId(
-              ack.localOrderId,
-              ack.cloudOrderId,
-              "PENDING"
+        switch (data.event) {
+          case "canteen_status":
+            setKdsOnline(data.payload.online);
+            toast[data.payload.online ? "success" : "warning"](
+              data.payload.online ? "Kitchen is online" : "Kitchen is offline",
             );
-            toast.success(`Order confirmed! ID: ${ack.cloudOrderId}`);
-          } else if (!ack.success) {
-            toast.error(ack.error || "Order confirmation failed");
-          }
-          break;
+            break;
 
-        case "order_completed":
-          const comp = data.payload as OrderCompletedPayload;
-          if (comp && comp.token) {
-            updateOrderStatus(comp.token, "COMPLETED");
-            toast.success(`🎉 Order #${comp.token} is ready!`, {
-              duration: 5000,
-            });
-          } else {
-            console.warn("Invalid order_completed payload:", data.payload);
-          }
-          break;
+          case "order_ack":
+            if (data.payload.status === "ACKNOWLEDGED") {
+              toast.success("Order sent to kitchen!");
+              updateOrderWithMongoId(
+                data.payload.localOrderId,
+                data.payload.cloudOrderId,
+                "IN QUEUE",
+              );
+            } else if (data.payload.status === "QUEUED_OFFLINE") {
+              toast.info("Kitchen offline. Order queued for later.");
+            }
+            break;
 
-        case "order_cancelled":
-          const cancl = data.payload as OrderCancelledPayload;
-          updateOrderStatus(cancl.token, "CANCELLED");
-          toast.info(`Order #${cancl.token} was cancelled`);
-          break;
+          case "order_update":
+            updateOrderStatus(data.payload.orderId, data.payload.status);
+            toast.info(data.payload.message);
+            break;
+
+          case "item_update":
+            toast.error(data.payload.message || "An item was rejected");
+            break;
+
+          case "pong":
+            break;
+
+          default:
+            console.log("Unknown event:", data.event);
+        }
+      } catch (err) {
+        console.error("WebSocket message error:", err);
       }
     };
 
@@ -154,6 +144,14 @@ function App() {
     socket.onclose = () => {
       setWs(null);
       setIsConnecting(false);
+      setKdsOnline(false);
+
+      // Auto-reconnect after 3 seconds if still authenticated
+      if (isAuthenticated) {
+        setTimeout(() => {
+          console.log("Attempting reconnection...");
+        }, 3000);
+      }
     };
 
     setWs(socket);

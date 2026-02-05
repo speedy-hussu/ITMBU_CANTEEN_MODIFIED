@@ -3,51 +3,45 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import ItemCard from "@/components/STUDENT/item-card";
-import type { MenuItem } from "@shared/types/item.types";
+import type { CartItem } from "@shared/types/item.types";
 
 // Hardcoded menu items
-const hardcodedItems: MenuItem[] = [
+const hardcodedItems = [
   {
     _id: "1",
     name: "Vada Pav",
     price: 30,
     category: "Dish",
-    isAvailable: true,
   },
   {
     _id: "2",
     name: "Samosa",
     price: 15,
     category: "Dish",
-    isAvailable: true,
   },
   {
     _id: "3",
     name: "Tea",
     price: 10,
     category: "Product",
-    isAvailable: true,
   },
   {
     _id: "4",
     name: "Coffee",
     price: 20,
     category: "Product",
-    isAvailable: true,
   },
   {
     _id: "5",
     name: "Idli",
     price: 25,
     category: "Dish",
-    isAvailable: true,
   },
   {
     _id: "6",
     name: "Dosa",
     price: 35,
     category: "Dish",
-    isAvailable: true,
   },
 ];
 
@@ -59,7 +53,7 @@ export default function Menu() {
 
   // Use hardcoded items instead of API
   const menuItems = hardcodedItems;
-  const filteredItems = menuItems.filter((item: MenuItem) => {
+  const filteredItems = menuItems.filter((item) => {
     const matchesCategory =
       selectedCategory === "All" || item.category === selectedCategory;
     const matchesSearch = item.name
@@ -110,7 +104,7 @@ export default function Menu() {
       {/* Menu Items Grid */}
       <div className="p-4 overflow-y-auto scrollbar-none ">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 ">
-          {filteredItems.map((item: MenuItem) => (
+          {filteredItems.map((item) => (
             <ItemCard key={item._id || item.name} item={item} />
           ))}
         </div>

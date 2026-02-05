@@ -16,27 +16,27 @@ const options: ConnectOptions = {
 const cloudDB: Connection = mongoose.createConnection(uri, options);
 
 // Connection events
-// cloudDB.on("connected", () => {
-//   console.log("✅ Cloud MongoDB connected successfully");
-// });
+cloudDB.on("connected", () => {
+  console.log("✅ Cloud MongoDB connected successfully");
+});
 
-// cloudDB.on("error", (err) => {
-//   console.error("❌ Cloud MongoDB connection error:", err);
-// });
+cloudDB.on("error", (err) => {
+  console.error("❌ Cloud MongoDB connection error:", err);
+});
 
-// cloudDB.on("disconnected", () => {
-//   console.log("ℹ️  Cloud MongoDB disconnected");
-// });
+cloudDB.on("disconnected", () => {
+  console.log("ℹ️  Cloud MongoDB disconnected");
+});
 
 // Close the connection when the Node process ends
-// process.on("SIGINT", async () => {
-//   try {
-//     await cloudDB.close();
-//     console.log("ℹ️  Cloud MongoDB connection closed through app termination");
-//     process.exit(0);
-//   } catch (err) {
-//     console.error("Error closing Cloud MongoDB connection:", err);
-//     process.exit(1);
-//   }
-// });
+process.on("SIGINT", async () => {
+  try {
+    await cloudDB.close();
+    console.log("ℹ️  Cloud MongoDB connection closed through app termination");
+    process.exit(0);
+  } catch (err) {
+    console.error("Error closing Cloud MongoDB connection:", err);
+    process.exit(1);
+  }
+});
 export default cloudDB;

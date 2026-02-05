@@ -1,4 +1,3 @@
-// offline/backend/src/modules/item/item.service.ts
 import {
   UpdatedItemStatusPayload,
   WSMessage,
@@ -11,6 +10,7 @@ export class ItemService {
   private static instance: ItemService;
   private constructor() {}
   private wsManager = WSManager.getInstance();
+
   static getInstance(): ItemService {
     if (!this.instance) this.instance = new ItemService();
     return this.instance;
@@ -18,16 +18,41 @@ export class ItemService {
 
   async itemStatusUpdate(orderId: string, itemId: string, status: string) {
     try {
-      // Simply update the specific item status in the DB [cite: 2026-01-25]
-      await OrderModel.findOneAndUpdate(
+      // Added { new: true } to get the updated object back
+      const updatedItemOrder = (await OrderModel.findOneAndUpdate(
         { _id: orderId, "items._id": itemId },
         { $set: { "items.$.status": status } },
-      );
+        { new: true },
+      ).lean()) as DbOrder;
 
-      // We do NOT call notifyStatusChange here anymore.
-      // The POS will get the update only when the OrderService.orderUpdateStatus is called.
+      if (!updatedItemOrder) return;
+
+      // "Stay Cool" Logic: Notify student early only if an item is REJECTED
+      if (
+        updatedItemOrder.source === "CLOUD" &&
+        updatedItemOrder.enrollmentId &&
+        status === "REJECTED"
+      ) {
+        const cloudNotification: WSMessage<any> = {
+          event: "item_update",
+          payload: {
+            enrollmentId: updatedItemOrder.enrollmentId,
+            orderId: updatedItemOrder._id,
+            itemId: itemId,
+            status: "REJECTED",
+          },
+        };
+
+        // Broadcast to the "CLOUD" role (The bridge to your Online folder)
+        this.wsManager.broadcastToRole("CLOUD", cloudNotification);
+
+        console.log(
+          `[ItemService] Early rejection notice sent to Cloud for: ${updatedItemOrder.enrollmentId}`,
+        );
+      }
+
       console.log(
-        `[ItemService] Item ${itemId} set to ${status}. No POS broadcast sent.`,
+        `[ItemService] Item ${itemId} set to ${status}. DB updated successfully.`,
       );
     } catch (error) {
       console.error("[ItemService] Error:", error);

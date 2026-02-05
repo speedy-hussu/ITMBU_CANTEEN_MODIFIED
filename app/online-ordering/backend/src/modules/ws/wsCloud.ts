@@ -4,12 +4,11 @@ import { WebSocket } from "ws";
 import mongoose from "mongoose";
 
 // We use the same standard roles for consistency
-type CloudRole = "LOCAL_CANTEEN" | "STUDENT";
 
 interface CloudClient {
   socket: WebSocket;
-  role: CloudRole;
-  identifier: string; // CanteenID or EnrollmentNo
+  role: any;
+  identifier: string; // CanteenID or EnrollmentId
 }
 
 export class CloudWebSocketServer {
@@ -36,15 +35,15 @@ export class CloudWebSocketServer {
 
     // 2. Endpoint for STUDENT APPS (Frontend or Backend)
     this.app.get("/ws/student", { websocket: true }, (socket, req) => {
-      const enrollmentNo = (req.query as any).enrollmentNo;
-      if (enrollmentNo) {
-        this.registerClient(enrollmentNo, "STUDENT", socket);
+      const enrollmentId = (req.query as any).enrollmentId;
+      if (enrollmentId) {
+        this.registerClient(enrollmentId, "STUDENT", socket);
       }
     });
     console.log("✅ Registered /ws/student endpoint");
   }
 
-  private registerClient(id: string, role: CloudRole, socket: WebSocket) {
+  private registerClient(id: string, role: any, socket: WebSocket) {
     console.log(`📡 Registering ${role}: ${id}`);
 
     this.clients.set(id, { socket, role, identifier: id });
@@ -71,14 +70,14 @@ export class CloudWebSocketServer {
     }
   }
 
-  private routeMessage(senderId: string, role: CloudRole, message: any) {
+  private routeMessage(senderId: string, role: any, message: any) {
     const { event, payload } = message;
 
     // IF MESSAGE FROM LOCAL -> GOES TO STUDENT
     if (role === "LOCAL_CANTEEN") {
-      const enrollmentNo = payload.enrollmentNo;
-      if (enrollmentNo) {
-        this.sendToClient(enrollmentNo, event, payload);
+      const enrollmentId = payload.enrollmentId;
+      if (enrollmentId) {
+        this.sendToClient(enrollmentId, event, payload);
       } else {
         // Broadcast updates (like KDS status) to all students
         this.broadcastToRole("STUDENT", event, payload);
@@ -93,15 +92,15 @@ export class CloudWebSocketServer {
     }
   }
 
-  private handleNewStudentOrder(enrollmentNo: string, orderData: any) {
+  private handleNewStudentOrder(enrollmentId: string, orderData: any) {
     const cloudOrderId = new mongoose.Types.ObjectId().toString();
 
     // Prepare the order for the local canteen (matching your new_order format)
     const orderPayload = {
       ...orderData,
       _id: cloudOrderId,
-      enrollmentNo,
-      source: "ONLINE",
+      enrollmentId,
+      source: "CLOUD",
     };
 
     const localCanteen = this.findCanteen(); // Logic to find the right canteen
@@ -116,7 +115,7 @@ export class CloudWebSocketServer {
     }
 
     // Inform the student immediately
-    this.sendToClient(enrollmentNo, "order_status", {
+    this.sendToClient(enrollmentId, "order_ack", {
       cloudOrderId,
       status: localCanteen ? "RECEIVED" : "QUEUED_OFFLINE",
     });
@@ -145,7 +144,7 @@ export class CloudWebSocketServer {
     }
   }
 
-  private broadcastToRole(role: CloudRole, event: string, payload: any) {
+  private broadcastToRole(role: any, event: string, payload: any) {
     this.clients.forEach((client) => {
       if (client.role === role && client.socket.readyState === WebSocket.OPEN) {
         client.socket.send(JSON.stringify({ event, payload }));

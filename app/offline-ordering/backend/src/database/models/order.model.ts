@@ -24,6 +24,14 @@ const OrderSchema = new Schema(
       trim: true,
       index: true,
     },
+    enrollmentId: {
+      type: String,
+      required: false,
+      trim: true,
+      index: true,
+      default: null,
+    },
+    totalAmount: { type: Number, required: true, min: 0 },
     items: {
       type: [OrderItemSchema],
       required: true,
@@ -32,7 +40,6 @@ const OrderSchema = new Schema(
         message: "Order must have at least one item",
       },
     },
-    totalAmount: { type: Number, required: true, min: 0 },
     refundedAmount: { type: Number, default: 0, min: 0 },
     status: {
       type: String,
