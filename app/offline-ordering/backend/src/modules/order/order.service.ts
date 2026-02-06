@@ -27,12 +27,9 @@ export class OrderService {
   }
 
   // Processes all incoming orders from POS (Local) and Cloud (Student).
-  async processIncomingOrder(
-    payload: PosOrderPayload,
-    role: OrderSource,
-  ): Promise<{ success: boolean; token?: string }> {
+  async processIncomingOrder(payload: PosOrderPayload, role: OrderSource) {
     try {
-      const orderData: Omit<DbOrder, "_id"> = {
+      const orderData: Omit<DbOrder, "_id" | "refundedAmount"> = {
         ...payload,
         source: role,
         status: "IN QUEUE",
@@ -46,10 +43,13 @@ export class OrderService {
         event: "new_order",
         payload: savedOrder,
       };
-
       this.wsManager.broadcastToRole("KDS", kdsMessage);
 
-      return { success: true, token: savedOrder.token };
+      return {
+        success: true,
+        token: savedOrder.token,
+        enrollmentId: savedOrder.enrollmentId,
+      };
     } catch (error) {
       console.error("[OrderService] Create Error:", error);
       return { success: false };

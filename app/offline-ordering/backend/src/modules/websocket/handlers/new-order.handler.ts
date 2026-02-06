@@ -20,6 +20,7 @@ export async function handleNewOrder(
   const ack = {
     event: "order_ack",
     payload: {
+      enrollmentId: result.enrollmentId,
       token: result.token,
       success: result.success,
     },

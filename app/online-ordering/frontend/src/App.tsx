@@ -34,7 +34,7 @@ function App() {
 
   // Zustand State
   const { user } = useAuthStore();
-  const { updateOrderStatus, updateOrderWithMongoId } = useOrderStore();
+  const { updateStatus } = useOrderStore();
   const isAuthenticated = !!user;
 
   // 1. Authentication validation Refined
@@ -95,6 +95,8 @@ function App() {
         const data = JSON.parse(msg.data) as WSMessage;
         if (!data?.event) return;
 
+        // Inside App.tsx -> socket.onmessage
+        console.log(msg.data);
         switch (data.event) {
           case "canteen_status":
             setKdsOnline(data.payload.online);
@@ -104,25 +106,42 @@ function App() {
             break;
 
           case "order_ack":
-            if (data.payload.status === "ACKNOWLEDGED") {
+            console.log(data.payload);
+            if (data.payload.success) {
               toast.success("Order sent to kitchen!");
-              updateOrderWithMongoId(
-                data.payload.localOrderId,
-                data.payload.cloudOrderId,
-                "IN QUEUE",
-              );
-            } else if (data.payload.status === "QUEUED_OFFLINE") {
-              toast.info("Kitchen offline. Order queued for later.");
             }
+            const status =
+              data.payload.success == true ? "IN QUEUE" : "NOT RECEIVED";
+            updateStatus({
+              token: data.payload.token,
+              status,
+            });
+
             break;
 
           case "order_update":
-            updateOrderStatus(data.payload.orderId, data.payload.status);
+            // Standard order-level update (PREPARING, COMPLETED, etc.)
+            console.log(data.payload);
+            updateStatus({
+              token: data.payload.token,
+              status: data.payload.status,
+            });
             toast.info(data.payload.message);
             break;
 
           case "item_update":
-            toast.error(data.payload.message || "An item was rejected");
+            console.log(data.payload);
+            updateStatus({
+              token: data.payload.token,
+              itemId: data.payload.itemId,
+              status: data.payload.status,
+            });
+
+            if (data.payload.status === "REJECTED") {
+              toast.error(
+                `Rejected: ${data.payload.itemName || "An item"} was unavailable.`,
+              );
+            }
             break;
 
           case "pong":
@@ -159,7 +178,7 @@ function App() {
     return () => {
       // Keep socket alive during navigation, only close on logout/unmount
     };
-  }, [isAuthenticated, ws, updateOrderStatus, updateOrderWithMongoId]);
+  }, [isAuthenticated, ws, updateStatus]);
 
   // Loading Screen for WebSocket initialization
   if (isAuthenticated && isConnecting) {

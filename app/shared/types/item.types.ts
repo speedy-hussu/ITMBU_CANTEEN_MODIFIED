@@ -13,6 +13,7 @@ export interface CartItem extends BaseItem {
 // Used specifically for KDS display logic
 export interface KdsItem extends BaseItem {
   quantity: number;
+  status:ItemStatus,
   checked?: boolean;
 }
 export type IncomingItem = Omit<CartItem, "quantity" | "total">;

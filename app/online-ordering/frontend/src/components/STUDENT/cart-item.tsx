@@ -3,16 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Minus, Plus } from "lucide-react";
 
-interface CartItemProps {
-  item: {
-    name: string;
-    price: number;
-    quantity: number;
-    category: string;
-  };
-}
-
-export default function AppCartItem({ item }: CartItemProps) {
+export default function AppCartItem({ item }: any) {
   const { addToCart, removeFromCart } = useCartStore();
 
   return (
@@ -29,13 +20,7 @@ export default function AppCartItem({ item }: CartItemProps) {
             size="icon"
             variant="default"
             className="md:h-6 md:w-6 h-4 w-4 rounded-full bg-[#667eea] hover:bg-[#5a6fd8] text-white"
-            onClick={() =>
-              removeFromCart({
-                name: item.name,
-                price: item.price,
-                category: item.category,
-              })
-            }
+            onClick={() => removeFromCart(item._id)}
           >
             <Minus className="size-3" />
           </Button>
@@ -48,6 +33,7 @@ export default function AppCartItem({ item }: CartItemProps) {
             className="md:h-6 md:w-6 h-4 w-4  rounded-full bg-[#667eea] hover:bg-[#5a6fd8] text-white"
             onClick={() =>
               addToCart({
+                _id: item._id,
                 name: item.name,
                 price: item.price,
                 category: item.category,
@@ -61,4 +47,3 @@ export default function AppCartItem({ item }: CartItemProps) {
     </Card>
   );
 }
-

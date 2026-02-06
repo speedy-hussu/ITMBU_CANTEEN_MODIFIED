@@ -3,11 +3,11 @@ import { CloudWSManager } from "../ws-manager";
 
 export const handleItemUpdate = (payload: any) => {
   const manager = CloudWSManager.getInstance();
-  const { enrollmentId, orderId, itemId, status } = payload;
+  const { enrollmentId, token, itemId, status } = payload;
 
   if (enrollmentId && status === "REJECTED") {
     manager.sendToClient(enrollmentId, "item_update", {
-      orderId,
+      token,
       itemId,
       status,
       message: "An item in your order is unavailable.",

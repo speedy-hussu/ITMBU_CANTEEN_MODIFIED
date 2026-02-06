@@ -70,7 +70,7 @@ export const useCartStore = create<CartStore>()(
           };
         }),
 
-      getCartTotal: () => get().cart.reduce((t, i) => t + i.total, 0),
+      getCartTotal: () => get().cart.reduce((t, i) => t + (i.quantity * i.price), 0),
       emptyCart: () => set({ cart: [], totalItems: 0 }),
     }),
     { name: "cart-storage" },

@@ -5,7 +5,6 @@ import { toast } from "sonner";
 // Importing your shared types as defined in our latest conversation
 import type {
   WSMessage,
-  UpdateOrderStatusPayload,
 } from "../../../../shared/types/websocket.types";
 import { NotificationSidebar } from "@/components/pos/notification-sidebar";
 import { useNotificationStore } from "@/store/notificationStore";
@@ -42,37 +41,6 @@ export default function Pos() {
   // Message Handler logic aligned with KDS Token system
   useEffect(() => {
     if (!ws) return;
-    const handleStatusUpdate = (payload: UpdateOrderStatusPayload) => {
-      const { token, status } = payload;
-
-      // 1. Early return if status is unknown
-      if (status === "IN QUEUE") return;
-
-      // 2. Map statuses to toast configurations
-      const toastConfig = {
-        COMPLETED: {
-          message: `Order ${token} completed`,
-          description: "Order is prepared. Call the student for pickup.",
-          icon: "🔔",
-          type: "success",
-        },
-        CANCELLED: {
-          message: `Order ${token} cancelled`,
-          description: "This order was removed by the kitchen staff.",
-          icon: "🚫",
-          type: "error",
-        },
-      };
-
-      const config = toastConfig[status as keyof typeof toastConfig];
-      if (config) {
-        toast[config.type as "success" | "error"](config.message, {
-          description: config.description,
-          icon: config.icon,
-          duration: status === "COMPLETED" ? 5000 : 3000,
-        });
-      }
-    };
     const handleMessage = (event: MessageEvent) => {
       try {
         const msg = JSON.parse(event.data) as WSMessage;

@@ -37,7 +37,7 @@ export class ItemService {
           event: "item_update",
           payload: {
             enrollmentId: updatedItemOrder.enrollmentId,
-            orderId: updatedItemOrder._id,
+            token: updatedItemOrder.token,
             itemId: itemId,
             status: "REJECTED",
           },

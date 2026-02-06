@@ -27,8 +27,7 @@ export type PosOrderPayload = Omit<
   OrderBase<CartItem>,
   | "_id"
   | "status"
-  | "source"
-  | "synced"
+  | "source" 
   | "createdAt"
   | "refundedAmount"
   | "isSyncedToCloudDB"

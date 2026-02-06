@@ -10,7 +10,6 @@ interface OrdersState {
   orders: KdsOrderPayload[];
   TotalOrders: number;
   addOrder: (order: DbOrder) => void;
-  setOrders: (orders: DbOrder[]) => void;
   updateOrder: (orderId: string, status: OrderStatus) => void;
   removeOrder: (orderId: string) => void;
   toggleItemStatus: (orderId: string, itemId: string) => void;
@@ -32,25 +31,13 @@ export const useOrdersStore = create<OrdersState>((set) => ({
         ...newOrder,
         items: newOrder.items.map((item) => ({
           ...item,
-          status: item.status || "PREPARING",
+          status: "PREPARING",
         })),
       };
       return {
         orders: [kdsOrder, ...state.orders],
         TotalOrders: state.TotalOrders + 1,
       };
-    }),
-
-  setOrders: (dbOrders) =>
-    set({
-      orders: dbOrders.map((order) => ({
-        ...order,
-        items: order.items.map((item) => ({
-          ...item,
-          status: item.status || "PREPARING",
-        })),
-      })),
-      TotalOrders: dbOrders.length,
     }),
 
   updateOrder: (orderId, status) =>

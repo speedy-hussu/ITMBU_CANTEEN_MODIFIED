@@ -3,45 +3,37 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import ItemCard from "@/components/STUDENT/item-card";
-import type { CartItem } from "@shared/types/item.types";
 
-// Hardcoded menu items
-const hardcodedItems = [
+export const MASTER_MENU = [
   {
-    _id: "1",
-    name: "Vada Pav",
-    price: 30,
+    _id: "691f076c7e3e86ba4a0e6ed2",
+    name: "dsdw",
+    price: 2000,
     category: "Dish",
   },
   {
-    _id: "2",
-    name: "Samosa",
-    price: 15,
+    _id: "6930ebb2a6bd44c4f9ff4808",
+    name: "bhaji",
+    price: 120,
     category: "Dish",
   },
   {
-    _id: "3",
-    name: "Tea",
-    price: 10,
+    _id: "6930ec22a6bd44c4f9ff4812",
+    name: "soup",
+    price: 20,
+    category: "Dish",
+  },
+  {
+    _id: "6930ec3da6bd44c4f9ff481a",
+    name: "cola",
+    price: 25,
     category: "Product",
   },
   {
-    _id: "4",
-    name: "Coffee",
+    _id: "6930fe71b67d63bee3525e3b",
+    name: "dud",
     price: 20,
     category: "Product",
-  },
-  {
-    _id: "5",
-    name: "Idli",
-    price: 25,
-    category: "Dish",
-  },
-  {
-    _id: "6",
-    name: "Dosa",
-    price: 35,
-    category: "Dish",
   },
 ];
 
@@ -52,7 +44,7 @@ export default function Menu() {
   const [searchQuery, setSearchQuery] = useState("");
 
   // Use hardcoded items instead of API
-  const menuItems = hardcodedItems;
+  const menuItems = MASTER_MENU;
   const filteredItems = menuItems.filter((item) => {
     const matchesCategory =
       selectedCategory === "All" || item.category === selectedCategory;
@@ -105,7 +97,7 @@ export default function Menu() {
       <div className="p-4 overflow-y-auto scrollbar-none ">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 ">
           {filteredItems.map((item) => (
-            <ItemCard key={item._id || item.name} item={item} />
+            <ItemCard key={item._id} item={item} />
           ))}
         </div>
       </div>

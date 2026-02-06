@@ -3,6 +3,7 @@ import { WebSocket } from "ws";
 import { handleNewOrder } from "./new-order.handler";
 import { handleOrderUpdate } from "./order-update.handler";
 import { handleItemUpdate } from "./item-status.handler";
+import { handleOrderAck } from "./order-ack.handler";
 import { WSMessage } from "@shared/types/websocket.types";
 import { ClientMeta } from "../shared/types";
 
@@ -18,6 +19,9 @@ export async function handleWSMessage(
   switch (event) {
     case "new_order":
       return handleNewOrder(payload);
+
+    case "order_ack":
+      return handleOrderAck(payload);
 
     case "order_update":
       return handleOrderUpdate(payload);

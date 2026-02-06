@@ -1,4 +1,5 @@
 // online/backend/src/modules/websocket/handlers/new-order.handler.ts
+import { OrderStatus } from "@shared/types";
 import { CloudWSManager } from "../ws-manager";
 
 export const handleNewOrder = (payload: any) => {
@@ -16,13 +17,15 @@ export const handleNewOrder = (payload: any) => {
   if (bridgeId) {
     manager.sendToClient(bridgeId, "new_order", orderPayload);
     manager.sendToClient(payload.enrollmentId, "order_ack", {
-      status: "ACKNOWLEDGED",
+      token: payload.token,
+      status: "QUEUED",
     });
   } else {
     // manager.sendToClient handles the caching if the student is offline,
     // but here we know the BRIDGE is offline, so we notify the student.
     manager.sendToClient(payload.enrollmentId, "order_ack", {
-      status: "QUEUED_OFFLINE",
+      token: payload.token,
+      status: "NOT RECIEVED",
     });
   }
 };

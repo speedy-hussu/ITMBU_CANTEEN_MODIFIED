@@ -1,13 +1,8 @@
 import { toast } from "sonner";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { useCartStore } from "@/store/cartStore";
-import type { BaseItem } from "@shared/types/item.types";
 
-interface ItemCardProps {
-  item: BaseItem;
-}
-
-export default function ItemCard({ item }: ItemCardProps) {
+export default function ItemCard({ item }: any) {
   const addToCart = useCartStore((state) => state.addToCart);
 
   const handleAddToCart = () => {
