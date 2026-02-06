@@ -34,7 +34,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   const isProduction = process.env.NODE_ENV === "production";
   await app.register(cors, {
     // 1. Explicitly name your production URL
-    origin: isProduction ? "https://itmbu-canteen.vercel.app" : true,
+    origin: isProduction ? "https://itmbu-canteen-modified.vercel.app" : true,
 
     credentials: true,
 

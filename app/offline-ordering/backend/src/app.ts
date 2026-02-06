@@ -18,17 +18,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   });
 
   // ========== PLUGINS ==========
-  const isProduction = process.env.NODE_ENV === "production";
-  await app.register(cors, {
-    // 1. Explicitly name your production URL
-    origin: isProduction ? "https://itmbu-canteen-modified.vercel.app" : true,
-
-    credentials: true,
-
-    // 2. Be explicit with headers so preflight doesn't fail
-    allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  });
+  await app.register(cors, { origin: true, credentials: true });
   await app.register(cookie, { secret: process.env.COOKIE_SECRET });
   await app.register(formbody);
   await app.register(websocket);
@@ -41,6 +31,7 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   await CloudBridge.getInstance();
   // console.log("registered cloud ws");
+
 
   return app;
 }
