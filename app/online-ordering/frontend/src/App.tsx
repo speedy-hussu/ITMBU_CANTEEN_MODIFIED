@@ -81,8 +81,11 @@ function App() {
     setIsConnecting(true);
 
     const enrollmentId = user?.enrollmentId;
+
+    const baseUrl = import.meta.env.VITE_WS_BASE_URL;
+
     const socket = new WebSocket(
-      `ws://localhost:5000/ws/user?enrollmentId=${enrollmentId}`,
+      `${baseUrl}/ws/user?enrollmentId=${enrollmentId}`,
     );
     socket.onopen = () => {
       console.log("✅ WebSocket connected");
