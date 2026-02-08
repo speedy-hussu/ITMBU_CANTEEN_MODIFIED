@@ -6,12 +6,14 @@ import { handleItemUpdate } from "./item-status.handler";
 import { handleOrderAck } from "./order-ack.handler";
 import { WSMessage } from "@shared/types/websocket.types";
 import { ClientMeta } from "../shared/types";
+import { CloudWSManager } from "../ws-manager";
 
 export async function handleWSMessage(
   socket: WebSocket,
   message: WSMessage<any>,
   meta: ClientMeta,
 ) {
+  const manager = CloudWSManager.getInstance();
   const { event, payload } = message;
 
   console.log(`📩 [Cloud Gateway] From ${meta.role} (${meta.id}): ${event}`);
@@ -29,11 +31,8 @@ export async function handleWSMessage(
     case "item_update":
       return handleItemUpdate(payload);
 
-    case "ping":
-      socket.send(
-        JSON.stringify({ event: "pong", payload: { ts: Date.now() } }),
-      );
-      console.log("pong send to & recieved from Local");
+    case "pong":
+      manager.updateLastSeen(meta.id);
       break;
 
     default:

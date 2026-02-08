@@ -12,21 +12,7 @@ import authRoutes from "./modules/auth/route";
 import { registerCloudWS } from "./modules/ws/cloud-gateway";
 
 export async function buildApp(): Promise<FastifyInstance> {
-  const app = fastify({
-    trustProxy: true, // MUST BE HERE
-    logger: {
-      level: process.env.LOG_LEVEL || "info",
-      transport: {
-        target: "pino-pretty",
-        options: {
-          colorize: true,
-          ignore: "pid,hostname",
-          translateTime: "HH:MM:ss Z",
-        },
-      },
-    },
-    bodyLimit: 2000 * 1024, // 2MB
-  });
+  const app = fastify();
 
   // ========== PLUGINS ==========
 

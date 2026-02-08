@@ -1,4 +1,3 @@
-// online/backend/src/modules/websocket/ws.manager.ts
 import { WebSocket } from "ws";
 import { ClientRole } from "./shared/types";
 import { WSEvent } from "@shared/types";
@@ -6,15 +5,17 @@ import { WSEvent } from "@shared/types";
 interface CloudClient {
   socket: WebSocket;
   role: ClientRole;
-  id: string; // enrollmentId for Students, CanteenID for Bridge
+  id: string;
+  lastSeen: number; 
 }
 
 export class CloudWSManager {
   private static instance: CloudWSManager;
   private clients = new Map<string, CloudClient>();
-
-  // Cache: enrollmentId -> Array of { event, payload }
   private offlineCache = new Map<string, any[]>();
+  
+  // 🚩 Heartbeat timer reference
+  private bridgeHeartbeat: NodeJS.Timeout | null = null;
 
   private constructor() {}
 
@@ -23,42 +24,81 @@ export class CloudWSManager {
     return this.instance;
   }
 
-  /**
-   * Registers a client and handles initial logic like cache flushing
-   */
   addClient(id: string, role: ClientRole, socket: WebSocket) {
-    this.clients.set(id, { socket, role, id });
+    // 🚩 Initialize lastSeen with current time
+    this.clients.set(id, { 
+      socket, 
+      role, 
+      id, 
+      lastSeen: Date.now() 
+    });
 
     if (role === "USER") {
-      // 1. Immediately send current canteen status to the new student
-      this.sendToClient(id, "canteen_status", {
-        online: this.isBridgeConnected(),
-      });
-
-      // 2. Deliver any missed notifications (Orders ready, etc.)
+      this.sendToClient(id, "canteen_status", { online: this.isBridgeConnected() });
       this.flushOfflineCache(id);
     }
 
     if (role === "LOCAL_BRIDGE") {
-      // Notify all connected students that the kitchen is now open
       this.broadcastToRole("USER", "canteen_status", { online: true });
+      
+      // 🚩 Start the heartbeat only if it's not already running
+      if (!this.bridgeHeartbeat) {
+        console.log("💓 Local Bridge connected. Starting heartbeat...");
+        this.startBridgeHeartbeat();
+      }
     }
   }
 
-  /**
-   * Cleans up client and notifies students if the bridge goes down
-   */
+  // 🚩 Call this from your message handler when a 'pong' is received
+  updateLastSeen(id: string) {
+    const client = this.clients.get(id);
+    if (client) {
+      client.lastSeen = Date.now();
+    }
+  }
+
+  private startBridgeHeartbeat() {
+    const PING_INTERVAL = 15000; // 15s
+    const TIMEOUT_LIMIT = 35000; // 35s
+
+    this.bridgeHeartbeat = setInterval(() => {
+      const now = Date.now();
+      
+      this.clients.forEach((client, id) => {
+        // We only care about checking the bridge
+        if (client.role === "LOCAL_BRIDGE") {
+          if (now - client.lastSeen > TIMEOUT_LIMIT) {
+            console.warn(`💀 Bridge ${id} timed out. Terminating.`);
+            client.socket.terminate(); // This triggers removeClient automatically
+            return;
+          }
+
+          if (client.socket.readyState === WebSocket.OPEN) {
+            client.socket.send(JSON.stringify({ event: "ping" }));
+          }
+        }
+      });
+    }, PING_INTERVAL);
+  }
+
   removeClient(id: string) {
     const client = this.clients.get(id);
     if (client?.role === "LOCAL_BRIDGE") {
       this.broadcastToRole("USER", "canteen_status", { online: false });
+      
+      // 🚩 Cleanup: Stop heart if no more bridges are connected
+      const hasOtherBridge = Array.from(this.clients.values())
+        .some(c => c.role === "LOCAL_BRIDGE" && c.id !== id);
+        
+      if (!hasOtherBridge && this.bridgeHeartbeat) {
+        clearInterval(this.bridgeHeartbeat);
+        this.bridgeHeartbeat = null;
+        console.log("🛑 No bridges left. Heartbeat stopped.");
+      }
     }
     this.clients.delete(id);
   }
 
-  /**
-   * Core delivery logic: Sends to socket or saves to cache
-   */
   sendToClient(id: string, event: WSEvent, payload: any) {
     const client = this.clients.get(id);
 
