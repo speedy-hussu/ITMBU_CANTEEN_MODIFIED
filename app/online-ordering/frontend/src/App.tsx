@@ -128,6 +128,7 @@ function App() {
             updateStatus({
               token: data.payload.token,
               status: data.payload.status,
+              refundedAmount: data.payload.refundedAmount,
             });
             toast.info(data.payload.message);
             break;

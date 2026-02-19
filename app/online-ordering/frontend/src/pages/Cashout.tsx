@@ -43,7 +43,7 @@ export default function Cashout({ ws, kdsOnline }: CartProps) {
       return;
     }
     const orderToken = `${user.enrollmentId}-${Math.floor(
-      Math.random() * 100,
+      Math.random() * 100 + 1,
     )}`;
 
     // ✅ Create ORDER (reusable)

@@ -7,12 +7,12 @@ export default function MyOrders() {
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      COMPLETED: "bg-green-500",
-      "IN QUEUE": "bg-yellow-500",
-      CANCELLED: "bg-red-500",
-      "NOT RECEIVED": "bg-gray-500",
+      COMPLETED: "green-500",
+      "IN QUEUE": "yellow-500",
+      CANCELLED: "red-500",
+      "NOT RECEIVED": "gray-500",
     };
-    return colors[status] || "bg-blue-500";
+    return colors[status] || "blue-500";
   };
 
   return (
@@ -26,40 +26,45 @@ export default function MyOrders() {
       {orders ? (
         <div className="p-4 grid md:grid-cols-2 gap-3 sm:gap-4">
           {orders.map((order) => (
-            <Card key={order._id} className={`border-l-4  shadow-sm`}>
+            <Card
+              key={order._id}
+              className={`border-l-4 border-${getStatusColor(order.status)} shadow-sm p-0 `}
+            >
               <CardContent className="p-4">
                 <div className="flex justify-between items-center mb-4">
                   <span className="font-mono font-bold text-lg">
                     #{order.token}
                   </span>
-                  <Badge className={getStatusColor(order.status)}>
+                  <Badge className={`bg-${getStatusColor(order.status)}`}>
                     {order.status}
                   </Badge>
                 </div>
 
                 <div className="space-y-3">
                   {order.items.map((item: any, idx: number) => {
-                    const isRejected = item.status === "REJECTED";
+                    const isItemRejected = item.status === "REJECTED";
+                    const isOrderCancelled = order.status === "CANCELLED";
+                    const isRejected = isItemRejected || isOrderCancelled;
 
                     return (
                       <div
                         key={idx}
                         className="flex justify-between items-start"
                       >
-                        <div className="flex flex-col">
+                        <div className="flex items-center gap-3">
                           <span
-                            className={`text-sm ${isRejected ? "line-through text-gray-400" : "text-gray-900 font-medium"}`}
+                            className={`${isRejected ? "line-through text-gray-400" : "text-gray-900 font-medium"}`}
                           >
                             {item.name} × {item.quantity}
                           </span>
                           {isRejected && (
-                            <span className="text-[10px] text-red-600 font-bold uppercase">
-                              Item Rejected
+                            <span className="text-xs text-red-600 font-bold uppercase">
+                              {isOrderCancelled ? "Rejected" : "Item Rejected"}
                             </span>
                           )}
                         </div>
                         <span
-                          className={`text-sm ${isRejected ? "line-through text-gray-400" : "font-semibold"}`}
+                          className={`${isRejected ? "line-through text-gray-400" : "font-semibold"}`}
                         >
                           ₹{item.price * item.quantity}
                         </span>
@@ -68,11 +73,23 @@ export default function MyOrders() {
                   })}
                 </div>
 
-                <div className="mt-4 pt-3 border-t flex justify-between items-center">
-                  <span className="text-xs text-gray-500">Order Total</span>
-                  <span className="text-lg font-bold text-orange-600">
-                    ₹{order.totalAmount}
-                  </span>
+                <div className="mt-4 pt-3 border-t space-y-2">
+                  {order.refundedAmount > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-green-600 font-medium">
+                        Refunded Amount
+                      </span>
+                      <span className="text-sm font-bold text-green-600">
+                        ₹{order.refundedAmount}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center">
+                    <span className=" text-gray-500">Order Total</span>
+                    <span className="text-lg font-bold text-orange-600">
+                      ₹{order.totalAmount}
+                    </span>
+                  </div>
                 </div>
               </CardContent>
             </Card>

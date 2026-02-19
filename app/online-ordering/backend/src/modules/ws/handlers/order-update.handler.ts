@@ -3,12 +3,13 @@ import { CloudWSManager } from "../ws-manager";
 
 export const handleOrderUpdate = (payload: any) => {
   const manager = CloudWSManager.getInstance();
-  const { enrollmentId, token, status } = payload;
+  const { enrollmentId, token, status, refundedAmount } = payload;
 
   if (enrollmentId) {
     manager.sendToClient(enrollmentId, "order_update", {
       token,
       status,
+      refundedAmount,
       message: `Your order is now ${status.toLowerCase()}.`,
     });
     console.log(

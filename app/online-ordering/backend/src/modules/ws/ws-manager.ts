@@ -6,14 +6,14 @@ interface CloudClient {
   socket: WebSocket;
   role: ClientRole;
   id: string;
-  lastSeen: number; 
+  lastSeen: number;
 }
 
 export class CloudWSManager {
   private static instance: CloudWSManager;
   private clients = new Map<string, CloudClient>();
   private offlineCache = new Map<string, any[]>();
-  
+
   // 🚩 Heartbeat timer reference
   private bridgeHeartbeat: NodeJS.Timeout | null = null;
 
@@ -26,21 +26,24 @@ export class CloudWSManager {
 
   addClient(id: string, role: ClientRole, socket: WebSocket) {
     // 🚩 Initialize lastSeen with current time
-    this.clients.set(id, { 
-      socket, 
-      role, 
-      id, 
-      lastSeen: Date.now() 
+    this.clients.set(id, {
+      socket,
+      role,
+      id,
+      lastSeen: Date.now(),
     });
+    console.log(`[WS Manager] ${role} connected. ID: ${id}`);
 
     if (role === "USER") {
-      this.sendToClient(id, "canteen_status", { online: this.isBridgeConnected() });
+      this.sendToClient(id, "canteen_status", {
+        online: this.isBridgeConnected(),
+      });
       this.flushOfflineCache(id);
     }
 
     if (role === "LOCAL_BRIDGE") {
       this.broadcastToRole("USER", "canteen_status", { online: true });
-      
+
       // 🚩 Start the heartbeat only if it's not already running
       if (!this.bridgeHeartbeat) {
         console.log("💓 Local Bridge connected. Starting heartbeat...");
@@ -63,12 +66,12 @@ export class CloudWSManager {
 
     this.bridgeHeartbeat = setInterval(() => {
       const now = Date.now();
-      
+
       this.clients.forEach((client, id) => {
         // We only care about checking the bridge
         if (client.role === "LOCAL_BRIDGE") {
           if (now - client.lastSeen > TIMEOUT_LIMIT) {
-            console.warn(`💀 Bridge ${id} timed out. Terminating.`);
+            console.log(`💀 Bridge ${id} timed out. Terminating.`);
             client.socket.terminate(); // This triggers removeClient automatically
             return;
           }
@@ -85,11 +88,12 @@ export class CloudWSManager {
     const client = this.clients.get(id);
     if (client?.role === "LOCAL_BRIDGE") {
       this.broadcastToRole("USER", "canteen_status", { online: false });
-      
+
       // 🚩 Cleanup: Stop heart if no more bridges are connected
-      const hasOtherBridge = Array.from(this.clients.values())
-        .some(c => c.role === "LOCAL_BRIDGE" && c.id !== id);
-        
+      const hasOtherBridge = Array.from(this.clients.values()).some(
+        (c) => c.role === "LOCAL_BRIDGE" && c.id !== id,
+      );
+
       if (!hasOtherBridge && this.bridgeHeartbeat) {
         clearInterval(this.bridgeHeartbeat);
         this.bridgeHeartbeat = null;

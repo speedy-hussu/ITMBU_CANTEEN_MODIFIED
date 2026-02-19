@@ -6,6 +6,7 @@ interface UpdatePayload {
   status: OrderStatus | ItemStatus;
   itemId?: string; // Only provided for item-level updates
   newMongoId?: string; // In case the cloud DB ID needs updating
+  refundedAmount?: number; // Provided when order is cancelled with refund
 }
 
 interface OrderStore {
@@ -23,7 +24,7 @@ export const useOrderStore = create<OrderStore>((set) => ({
       orders: [order, ...state.orders],
     })),
 
-  updateStatus: ({ token, status, itemId, newMongoId }) =>
+  updateStatus: ({ token, status, itemId, newMongoId, refundedAmount }) =>
     set((state) => ({
       orders: state.orders.map((order) => {
         // Match by token as requested
@@ -47,6 +48,7 @@ export const useOrderStore = create<OrderStore>((set) => ({
           ...order,
           _id: newMongoId ?? order._id,
           status: status as OrderStatus,
+          ...(refundedAmount !== undefined && { refundedAmount }),
         };
       }),
     })),
