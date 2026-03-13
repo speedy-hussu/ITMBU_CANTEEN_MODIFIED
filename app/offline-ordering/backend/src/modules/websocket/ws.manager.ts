@@ -1,5 +1,6 @@
 import type { WebSocket } from "ws";
 import { ClientRole, ConnectedClient } from "./shared/types";
+import { CloudBridge } from "./gateway/cloud.gateway";
 
 export class WSManager {
   private static instance: WSManager;
@@ -23,6 +24,16 @@ export class WSManager {
     // If a KDS just connected, flush the memory cache immediately
     if (role === "KDS") {
       this.flushPendingOrders(socket);
+
+      // Send current cloud status to KDS
+      const cloudStatus = CloudBridge.getInstance().getCloudStatus();
+
+      const cloudStatusResponse = {
+        event: "cloud_status",
+        payload: { connected: cloudStatus },
+      };
+
+      socket.send(JSON.stringify(cloudStatusResponse));
     }
   }
 

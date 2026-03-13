@@ -11,6 +11,7 @@ import type {
   UpdateOrderStatusPayload,
 } from "../../../../shared/types/websocket.types";
 import type { DbOrder } from "../../../../shared/types/order.types";
+import { Button } from "@/components/ui/button";
 
 export default function Orders() {
   const { orders, addOrder, updateOrder } = useOrdersStore();
@@ -21,6 +22,7 @@ export default function Orders() {
   );
   const [isConnecting, setIsConnecting] = useState(true);
   const [connectionError, setConnectionError] = useState(true); // Start with error state until connection is established
+  const [cloudStatus, setCloudStatus] = useState<boolean | null>(null); // null = unknown, true = online, false = offline
 
   // WebSocket Connection
   useEffect(() => {
@@ -56,6 +58,11 @@ export default function Orders() {
               updateOrder(token, status);
             }
             break;
+          case "cloud_status":
+            // Handle cloud status updates
+            setCloudStatus(msg.payload.connected);
+            console.log("Cloud status updated:", msg.payload.connected);
+            break;
         }
       } catch (err) {
         console.error("WS Parse Error", err);
@@ -64,7 +71,19 @@ export default function Orders() {
 
     ws.addEventListener("message", handleMessage);
     return () => ws.removeEventListener("message", handleMessage);
-  }, [ws, addOrder, updateOrder]);
+  }, [ws, addOrder, updateOrder, setCloudStatus]);
+
+  // Toggle cloud connection
+  const toggleCloudConnection = () => {
+    if (!ws) return;
+
+    const toggleMessage = {
+      event: "canteen_toggle",
+    };
+
+    ws.send(JSON.stringify(toggleMessage));
+    console.log("Sent cloud toggle request");
+  };
 
   // Filtering Logic
   const filteredOrders = useMemo(() => {
@@ -90,74 +109,99 @@ export default function Orders() {
       </div>
     );
   }
-
+  
   return (
     <div className="min-h-screen w-full bg-gradient-primary text-white">
-      <div className="flex gap-10 p-3  items-center">
-        <div className="flex items-center gap-2">
-          {connectionError ? (
-            <WifiOff className="text-red-300" />
-          ) : (
-            <Wifi className="text-green-300" />
-          )}
-          <h1 className="text-3xl font-bold">ITMBU KITCHEN</h1>
-        </div>
-        <div className="flex flex-wrap items-center gap-5 ">
-          <Tabs
-            value={activeTab}
-            onValueChange={(value) =>
-              setActiveTab(value as "IN QUEUE" | "COMPLETED")
-            }
-            className="w-auto"
-          >
-            <TabsList className="bg-white/20 border-white/30">
-              <TabsTrigger
-                value="IN QUEUE"
-                className="data-[state=active]:bg-white text-white data-[state=active]:text-[#667eea] relative"
-              >
-                IN QUEUE
-                {pendingCount > 0 && (
-                  <Badge
-                    variant="secondary"
-                    className="ml-2 bg-white text-[#667eea] hover:bg-white"
-                  >
-                    {pendingCount}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger
-                value="COMPLETED"
-                className="data-[state=active]:bg-white text-white data-[state=active]:text-[#667eea] relative"
-              >
-                COMPLETED
-                {completedCount > 0 && (
-                  <Badge
-                    variant="secondary"
-                    className="ml-2 bg-white text-[#667eea] hover:bg-white"
-                  >
-                    {completedCount}
-                  </Badge>
-                )}
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-          <div className="relative flex-1 min-w-[250px] max-w-md">
-            <Search className="absolute z-10 top-1/2 left-3 transform -translate-y-1/2 text-white/70" />
-            <Input
-              type="text"
-              placeholder="Search Order"
-              value={searchTerm}
-              className="pl-10 pr-10 bg-white/20 border-2 border-white/30 text-white placeholder:text-white/70 focus-visible:ring-white focus-visible:border-white"
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            {searchTerm && (
-              <X
-                className="cursor-pointer absolute z-10 top-1/2 right-3 transform -translate-y-1/2 text-white/70 hover:text-white transition-colors"
-                onClick={() => setSearchTerm("")}
-              />
+      <div className="flex justify-between p-3 ">
+        <div className="flex gap-10  items-center">
+          <div className="flex items-center gap-2">
+            {connectionError ? (
+              <WifiOff className="text-red-300" />
+            ) : (
+              <Wifi className="text-green-300" />
             )}
+            <h1 className="text-3xl font-bold">ITMBU KITCHEN</h1>
+          </div>
+          <div className="flex flex-wrap items-center gap-5 ">
+            <Tabs
+              value={activeTab}
+              onValueChange={(value) =>
+                setActiveTab(value as "IN QUEUE" | "COMPLETED")
+              }
+              className="w-auto"
+            >
+              <TabsList className="bg-white/20 border-white/30">
+                <TabsTrigger
+                  value="IN QUEUE"
+                  className="data-[state=active]:bg-white text-white data-[state=active]:text-[#667eea] relative"
+                >
+                  IN QUEUE
+                  {pendingCount > 0 && (
+                    <Badge
+                      variant="secondary"
+                      className="ml-2 bg-white text-[#667eea] hover:bg-white"
+                    >
+                      {pendingCount}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger
+                  value="COMPLETED"
+                  className="data-[state=active]:bg-white text-white data-[state=active]:text-[#667eea] relative"
+                >
+                  COMPLETED
+                  {completedCount > 0 && (
+                    <Badge
+                      variant="secondary"
+                      className="ml-2 bg-white text-[#667eea] hover:bg-white"
+                    >
+                      {completedCount}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <div className="relative flex-1 min-w-[250px] max-w-md">
+              <Search className="absolute z-10 top-1/2 left-3 transform -translate-y-1/2 text-white/70" />
+              <Input
+                type="text"
+                placeholder="Search Order"
+                value={searchTerm}
+                className="pl-10 pr-10 bg-white/20 border-2 border-white/30 text-white placeholder:text-white/70 focus-visible:ring-white focus-visible:border-white"
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              {searchTerm && (
+                <X
+                  className="cursor-pointer absolute z-10 top-1/2 right-3 transform -translate-y-1/2 text-white/70 hover:text-white transition-colors"
+                  onClick={() => setSearchTerm("")}
+                />
+              )}
+            </div>
           </div>
         </div>
+        <Button
+          onClick={toggleCloudConnection}
+          variant="outline"
+          disabled={connectionError}
+          className="bg-white/20 border-white/30 text-white disabled:text-white/50 disabled:bg-white/10 hover:bg-white/30"
+        >
+          {cloudStatus === null ? (
+            <>
+              <Wifi className="text-gray-300 mr-2" />
+              Unknown
+            </>
+          ) : cloudStatus ? (
+            <>
+              <Wifi className="text-green-300 mr-2" />
+              Cloud Connected
+            </>
+          ) : (
+            <>
+              <WifiOff className="text-red-300 mr-2" />
+              Cloud Disconnected
+            </>
+          )}
+        </Button>
       </div>
 
       {activeTab === "IN QUEUE" && filteredOrders.length === 0 ? (

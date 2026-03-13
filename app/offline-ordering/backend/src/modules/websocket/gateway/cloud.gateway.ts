@@ -10,7 +10,7 @@ export class CloudBridge {
   private rws: ReconnectingWebSocket | null = null;
   private deviceId = "LOCAL_SERVER_01";
   private role: ClientRole = "CLOUD";
-
+  private isManuallyPaused = false;
   private constructor() {
     this.connect();
   }
@@ -20,6 +20,35 @@ export class CloudBridge {
     return this.instance;
   }
 
+  // Get current cloud connection status
+  public getCloudStatus(): boolean {
+    const isPaused = this.isManuallyPaused;
+    const isConnected = !isPaused && this.rws?.readyState === 1;
+    return isConnected;
+  }
+
+  // Toggle cloud sync on/off
+  public toggleCloudSync() {
+    // 1. Invert the state
+    this.isManuallyPaused = !this.isManuallyPaused;
+
+    if (this.isManuallyPaused) {
+      // 2. If now paused, close the connection
+      console.log("🛑 Action: Manual Disconnect");
+      this.rws?.close(1000, "KDS_MANUAL_OFFLINE");
+    } else {
+      // 3. If now unpaused, reconnect
+      console.log("🟢 Action: Manual Reconnect");
+      if (this.rws) {
+        this.rws.reconnect();
+      } else {
+        this.connect();
+      }
+    }
+
+    // 4. Return the new state so the KDS UI can update immediately
+    return this.isManuallyPaused;
+  }
   private connect() {
     const url = process.env.CLOUD_WS_URL || "ws://localhost:5000/ws/bridge";
 
@@ -34,12 +63,13 @@ export class CloudBridge {
 
     this.rws.addEventListener("open", () => {
       console.log("☁️ Connected to Cloud Gateway via RWS");
-      // Use this.rws.binaryType or just pass the instance.
-      // Note: WSManager needs to be okay with the RWS wrapper.
       WSManager.getInstance().addClient(
         this.deviceId,
         this.role,
         this.rws as any,
+      );
+      (this.rws as any).send(
+        JSON.stringify({ event: "cloud_status", payload: { connected: true } }),
       );
     });
 
@@ -47,8 +77,6 @@ export class CloudBridge {
     this.rws.addEventListener("message", ({ data }) => {
       try {
         const message = JSON.parse(data.toString());
-        // No need for 'await' if handleWSMessage isn't returning a promise
-        // but keeping it safe based on your previous snippets.
         handleWSMessage(this.rws as any, message, {
           deviceId: this.deviceId,
           role: this.role,
@@ -65,6 +93,16 @@ export class CloudBridge {
     this.rws.addEventListener("close", () => {
       console.log("❌ Cloud connection lost. RWS will handle retry.");
       WSManager.getInstance().removeClient(this.deviceId);
+
+      // Notify about cloud disconnection
+      if (this.rws && this.rws.readyState === 1) {
+        (this.rws as any).send(
+          JSON.stringify({
+            event: "cloud_status",
+            payload: { connected: false },
+          }),
+        );
+      }
     });
   }
 }

@@ -14,7 +14,6 @@ import { CloudBridge } from "./modules/websocket/gateway/cloud.gateway";
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = fastify({
-    /* ... logger config ... */
   });
 
   // ========== PLUGINS ==========
@@ -30,8 +29,5 @@ export async function buildApp(): Promise<FastifyInstance> {
   console.log("registered local ws");
 
   await CloudBridge.getInstance();
-  // console.log("registered cloud ws");
-
-
   return app;
 }

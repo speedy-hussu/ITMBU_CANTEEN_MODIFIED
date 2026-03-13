@@ -7,12 +7,22 @@ export default function MyOrders() {
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      COMPLETED: "green-500",
-      "IN QUEUE": "yellow-500",
-      CANCELLED: "red-500",
-      "NOT RECEIVED": "gray-500",
+      COMPLETED: "bg-green-500",
+      "IN QUEUE": "bg-yellow-500",
+      CANCELLED: "bg-red-500",
+      "NOT RECEIVED": "bg-gray-500",
     };
-    return colors[status] || "blue-500";
+    return colors[status] || "bg-blue-500";
+  };
+
+  const getBorderColor = (status: string) => {
+    const colors: Record<string, string> = {
+      COMPLETED: "border-green-500",
+      "IN QUEUE": "border-yellow-500",
+      CANCELLED: "border-red-500",
+      "NOT RECEIVED": "border-gray-500",
+    };
+    return colors[status] || "border-blue-500";
   };
 
   return (
@@ -28,14 +38,14 @@ export default function MyOrders() {
           {orders.map((order) => (
             <Card
               key={order._id}
-              className={`border-l-4 border-${getStatusColor(order.status)} shadow-sm p-0 `}
+              className={`border-l-4 ${getBorderColor(order.status)} shadow-sm p-0 `}
             >
               <CardContent className="p-4">
                 <div className="flex justify-between items-center mb-4">
                   <span className="font-mono font-bold text-lg">
                     #{order.token}
                   </span>
-                  <Badge className={`bg-${getStatusColor(order.status)}`}>
+                  <Badge className={getStatusColor(order.status)}>
                     {order.status}
                   </Badge>
                 </div>

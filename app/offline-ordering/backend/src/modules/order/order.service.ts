@@ -137,17 +137,16 @@ export class OrderService {
       this.wsManager.broadcastToRole("CLOUD", cloudPayload);
     }
   }
+  //Pushes the completed order snapshot to Atlas.
+  // async syncToAtlas(order: DbOrder): Promise<void> {
+  //   try {
+  //     // Logic for Atlas connection goes here...
+  //     await OrderModel.findByIdAndUpdate(order._id, {
+  //       isSyncedToCloudDB: true,
+  //     });
+  //     console.log(`[Atlas Sync] Success for Token: ${order.token}`);
+  //   } catch (error) {
+  //     console.warn(`[Atlas Sync] Postponed for Token: ${order.token}`);
+  //   }
+  // }
 }
-
-//Pushes the completed order snapshot to Atlas.
-// async syncToAtlas(order: DbOrder): Promise<void> {
-//   try {
-//     // Logic for Atlas connection goes here...
-//     await OrderModel.findByIdAndUpdate(order._id, {
-//       isSyncedToCloudDB: true,
-//     });
-//     console.log(`[Atlas Sync] Success for Token: ${order.token}`);
-//   } catch (error) {
-//     console.warn(`[Atlas Sync] Postponed for Token: ${order.token}`);
-//   }
-// }

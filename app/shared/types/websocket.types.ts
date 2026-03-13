@@ -5,7 +5,9 @@ import type { DbOrder, PosOrderPayload, OrderStatus } from "./order.types";
 // Only what is actually used in the Offline <=> Online flow
 
 export type WSEvent =
-  | "canteen_status"
+  | "canteen_toggle" // for toggling canteen status
+  | "canteen_status" // for canteen status updates
+  | "cloud_status" // for cloud status updates
   | "new_order" // POS or Cloud sending an order
   | "order_update" // KDS updating order status
   | "item_update"
