@@ -68,5 +68,4 @@ const OrderSchema = new Schema(
 );
 
 export const OrderModel =
-  mongoose.models.CanteenOrder ||
-  mongoose.model("CanteenOrder", OrderSchema, "CanteenOrders");
+  mongoose.models.order || mongoose.model("Order", OrderSchema, "orders");

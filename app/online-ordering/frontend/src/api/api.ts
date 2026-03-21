@@ -16,14 +16,14 @@
 //   return res.data;
 // };
 import axios from "axios";
-const api = axios.create({
+export const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
   withCredentials: true, // Crucial for cookies to work
 });
 
 export const loginUser = async (
   enrollmentId: string,
-  password: string
+  password: string,
 ): Promise<any> => {
   const response = await api.post("/auth/login", { enrollmentId, password });
   return response.data;

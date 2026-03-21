@@ -11,6 +11,7 @@ interface UpdatePayload {
 
 interface OrderStore {
   orders: DbOrder[];
+  setOrders: (orders: DbOrder[]) => void;
   addOrder: (order: any) => void;
   updateStatus: (payload: UpdatePayload) => void;
   clearOrders: () => void;
@@ -18,6 +19,8 @@ interface OrderStore {
 
 export const useOrderStore = create<OrderStore>((set) => ({
   orders: [],
+
+  setOrders: (orders) => set({ orders }),
 
   addOrder: (order) =>
     set((state) => ({

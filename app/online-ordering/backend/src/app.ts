@@ -10,6 +10,7 @@ import { authDecorator } from "./decorator/auth.decorator";
 import userItemRoute from "./modules/items/routes/user.route";
 import authRoutes from "./modules/auth/route";
 import { registerCloudWS } from "./modules/ws/cloud-gateway";
+import userRoutes from "./modules/user/route";
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = fastify();
@@ -62,6 +63,7 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   // API Routes
   await app.register(userItemRoute, { prefix: "/api/items" });
+  await app.register(userRoutes, { prefix: "/api/user" });
 
   // ========== WebSocket Routes ==========
 

@@ -1,9 +1,11 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { useOrders } from "@/hooks/useOrders";
 import { useOrderStore } from "@/store/orderStore";
 
 export default function MyOrders() {
   const { orders } = useOrderStore();
+  const { isLoading } = useOrders(); // Trigger initial fetch
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -27,6 +29,17 @@ export default function MyOrders() {
     return colors[status] || "border-blue-500";
   };
 
+  if (isLoading) {
+    return (
+      <div className="pb-20 min-h-[calc(100dvh-65px)] bg-gradient-primary flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading orders...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="pb-20 min-h-[calc(100dvh-65px)] bg-gradient-primary">
       <div className="bg-white sticky top-0 z-10 shadow-sm p-4">
@@ -37,9 +50,9 @@ export default function MyOrders() {
 
       {orders ? (
         <div className="p-4 grid md:grid-cols-2 gap-3 sm:gap-4">
-          {orders.map((order) => (
+          {orders.map((order, idx) => (
             <Card
-              key={order._id}
+              key={idx}
               className={`border-l-4 ${getBorderColor(order.status)} shadow-sm p-0 `}
             >
               <CardContent className="p-4">

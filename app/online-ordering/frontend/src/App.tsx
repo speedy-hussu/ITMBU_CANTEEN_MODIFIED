@@ -79,7 +79,6 @@ function App() {
     if (ws) return; // Prevent duplicate connections
 
     setIsConnecting(true);
-
     const enrollmentId = user?.enrollmentId;
 
     const baseUrl = import.meta.env.VITE_WS_BASE_URL;
