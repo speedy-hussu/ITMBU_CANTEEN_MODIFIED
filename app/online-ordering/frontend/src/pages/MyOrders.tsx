@@ -8,7 +8,7 @@ export default function MyOrders() {
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
       DELIVERED: "bg-green-500",
-      READY: "bg-orange-500",
+      READY: "bg-green-400",
       "IN QUEUE": "bg-yellow-500",
       CANCELLED: "bg-red-500",
       "NOT RECEIVED": "bg-gray-500",
@@ -19,7 +19,7 @@ export default function MyOrders() {
   const getBorderColor = (status: string) => {
     const colors: Record<string, string> = {
       DELIVERED: "border-green-500",
-      READY: "border-orange-500",
+      READY: "border-green-400",
       "IN QUEUE": "border-yellow-500",
       CANCELLED: "border-red-500",
       "NOT RECEIVED": "border-gray-500",

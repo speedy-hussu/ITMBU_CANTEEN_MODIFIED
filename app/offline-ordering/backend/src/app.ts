@@ -12,6 +12,7 @@ import orderRoutes from "./modules/order/route";
 //local ws server
 import { registerLocalGateway } from "./modules/websocket/gateway/local.gateway";
 import { CloudBridge } from "./modules/websocket/gateway/cloud.gateway";
+import { OrderSync } from "./modules/sync/orderSync.service";
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = fastify({});
@@ -30,5 +31,10 @@ export async function buildApp(): Promise<FastifyInstance> {
   console.log("registered local ws");
 
   await CloudBridge.getInstance();
+
+  // Start Atlas sync heartbeat
+  OrderSync.startHeartbeat();
+  console.log("🔄 Order sync to Atlas started");
+
   return app;
 }

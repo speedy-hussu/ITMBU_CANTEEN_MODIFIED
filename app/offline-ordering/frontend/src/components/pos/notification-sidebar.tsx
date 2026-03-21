@@ -12,7 +12,7 @@ export const NotificationSidebar = () => {
           border: "border-blue-500",
           badge: "bg-blue-100 text-blue-700",
         };
-      case "COMPLETED":
+      case "READY":
         return {
           border: "border-green-500",
           badge: "bg-green-100 text-green-700",

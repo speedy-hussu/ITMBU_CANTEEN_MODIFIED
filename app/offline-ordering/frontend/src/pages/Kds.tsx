@@ -136,16 +136,9 @@ export default function Orders() {
   return (
     <div className="min-h-screen w-full bg-gradient-primary text-white">
       <div className="flex justify-between p-3 ">
-        <div className="flex gap-10  items-center">
-          <div className="flex items-center gap-2">
-            {connectionError ? (
-              <WifiOff className="text-red-300" />
-            ) : (
-              <Wifi className="text-green-300" />
-            )}
-            <h1 className="text-3xl font-bold">ITMBU KITCHEN</h1>
-          </div>
-          <div className="flex flex-wrap items-center gap-5 ">
+        <div className="flex gap-10 items-center">
+          <h1 className="text-3xl font-bold">ITMBU KITCHEN</h1>
+          <div className="flex flex-wrap items-center gap-5">
             <Tabs
               value={activeTab}
               onValueChange={(value) =>
@@ -232,31 +225,62 @@ export default function Orders() {
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          {/* Cloud Status - WiFi Icon Only */}
-          <div
-            className={`p-2 rounded-full ${
-              cloudStatus === true
-                ? "bg-green-500/20"
-                : cloudStatus === false
-                  ? "bg-red-500/20"
-                  : "bg-gray-500/20"
-            }`}
-            title={
-              cloudStatus === true
-                ? "Cloud Connected"
-                : cloudStatus === false
-                  ? "Cloud Disconnected"
-                  : "Checking..."
-            }
-          >
-            {cloudStatus === true ? (
-              <Wifi className="w-5 h-5 text-green-300" />
-            ) : cloudStatus === false ? (
-              <WifiOff className="w-5 h-5 text-red-300" />
-            ) : (
-              <Wifi className="w-5 h-5 text-gray-300" />
-            )}
+        <div className="flex items-center gap-4">
+          {/* Connection Status Group */}
+          <div className="flex items-center gap-3 mr-2">
+            {/* Local Backend WiFi */}
+            <div className="flex items-center gap-2">
+              <div
+                className={`p-2 rounded-full ${
+                  connectionError ? "bg-red-500/20" : "bg-green-500/20"
+                }`}
+                title={
+                  connectionError
+                    ? "Local Backend Disconnected"
+                    : "Local Backend Connected"
+                }
+              >
+                {connectionError ? (
+                  <WifiOff className="w-4 h-4 text-red-300" />
+                ) : (
+                  <Wifi className="w-4 h-4 text-green-300" />
+                )}
+              </div>
+              <span className="text-[10px] uppercase tracking-wider text-white/70">
+                Local
+              </span>
+            </div>
+
+            {/* Cloud Backend WiFi */}
+            <div className="flex items-center gap-2">
+              <div
+                className={`p-2 rounded-full ${
+                  cloudStatus === true
+                    ? "bg-green-500/20"
+                    : cloudStatus === false
+                      ? "bg-red-500/20"
+                      : "bg-gray-500/20"
+                }`}
+                title={
+                  cloudStatus === true
+                    ? "Cloud Backend Connected"
+                    : cloudStatus === false
+                      ? "Cloud Backend Disconnected"
+                      : "Checking..."
+                }
+              >
+                {cloudStatus === true ? (
+                  <Wifi className="w-4 h-4 text-green-300" />
+                ) : cloudStatus === false ? (
+                  <WifiOff className="w-4 h-4 text-red-300" />
+                ) : (
+                  <Wifi className="w-4 h-4 text-gray-300" />
+                )}
+              </div>
+              <span className="text-[10px] uppercase tracking-wider text-white/70">
+                Cloud
+              </span>
+            </div>
           </div>
 
           {/* Mode Toggle Button */}

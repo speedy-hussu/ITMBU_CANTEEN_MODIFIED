@@ -55,43 +55,47 @@ export class OrderService {
       return { success: false };
     }
   }
-
-  // Updates order status (typically triggered by KDS).
   async orderUpdateStatus(
     orderId: string,
     newStatus: OrderStatus,
   ): Promise<DbOrder | null> {
     try {
-      // 1. Prepare base update
-      let updateQuery: any = { $set: { status: newStatus } };
-      let options: any = { new: true };
-
-      // 2. Handle status-specific updates
-      if (newStatus === "READY") {
-        updateQuery.$set.readyAt = new Date().toISOString();
-      }
-      if (newStatus === "DELIVERED" || newStatus === "CANCELLED") {
-        updateQuery.$set["items.$[elem].status"] = "PREPARED";
-        options.arrayFilters = [{ "elem.status": { $ne: "REJECTED" } }];
-      }
-
-      // 3. Fetch current state to calculate the FINAL refund
+      // 1. Fetch Snapshot (Required for refund calculations)
       const orderSnapshot = await OrderModel.findById(orderId);
       if (!orderSnapshot) return null;
 
-      if (newStatus === "DELIVERED" || newStatus === "CANCELLED") {
-        const totalRefund =
-          newStatus === "CANCELLED"
-            ? orderSnapshot.totalAmount
-            : orderSnapshot.items
-                .filter((i: any) => i.status === "REJECTED")
-                .reduce((sum: number, i: any) => sum + i.price * i.quantity, 0);
+      // 2. Initialize Base Update
+      const updateQuery: any = {
+        $set: {
+          status: newStatus,
+          isSyncedToCloudDB: false,
+          updatedAt: new Date(), // Good practice for syncing
+        },
+      };
+      const options: any = { new: true };
 
-        // Store the final calculated refund in the DB [cite: 2026-01-31]
-        updateQuery.$set.refundedAmount = totalRefund;
+      // 3. Shared Logic: Item Status Updates (READY, DELIVERED, CANCELLED)
+      const terminalStates: OrderStatus[] = ["READY", "DELIVERED", "CANCELLED"];
+
+      if (terminalStates.includes(newStatus)) {
+        updateQuery.$set["items.$[elem].status"] = "PREPARED";
+        options.arrayFilters = [{ "elem.status": { $ne: "REJECTED" } }];
+
+        if (newStatus === "READY") {
+          updateQuery.$set.readyAt = new Date().toISOString();
+        }
       }
 
-      // 4. Apply everything in one atomic update
+      // 4. Refund Logic
+      if (newStatus === "READY") {
+        updateQuery.$set.refundedAmount = orderSnapshot.items
+          .filter((i: any) => i.status === "REJECTED")
+          .reduce((sum: number, i: any) => sum + i.price * i.quantity, 0);
+      } else if (newStatus === "CANCELLED") {
+        updateQuery.$set.refundedAmount = orderSnapshot.totalAmount;
+      }
+
+      // 5. Atomic Update
       const updatedOrder = (await OrderModel.findByIdAndUpdate(
         orderId,
         updateQuery,
@@ -108,7 +112,6 @@ export class OrderService {
       return null;
     }
   }
-
   private notifyStatusChange(order: DbOrder): void {
     if (order.source == "LOCAL") {
       const posPayload: WSMessage<any> = {
@@ -136,16 +139,4 @@ export class OrderService {
       this.wsManager.broadcastToRole("CLOUD", cloudPayload);
     }
   }
-  //Pushes the completed order snapshot to Atlas.
-  // async syncToAtlas(order: DbOrder): Promise<void> {
-  //   try {
-  //     // Logic for Atlas connection goes here...
-  //     await OrderModel.findByIdAndUpdate(order._id, {
-  //       isSyncedToCloudDB: true,
-  //     });
-  //     console.log(`[Atlas Sync] Success for Token: ${order.token}`);
-  //   } catch (error) {
-  //     console.warn(`[Atlas Sync] Postponed for Token: ${order.token}`);
-  //   }
-  // }
 }
