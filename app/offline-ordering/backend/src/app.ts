@@ -7,14 +7,14 @@ import websocket from "@fastify/websocket";
 //routes
 import { authModule } from "./modules/auth/route";
 import itemRoutes from "./modules/item/route";
+import orderRoutes from "./modules/order/route";
 
 //local ws server
 import { registerLocalGateway } from "./modules/websocket/gateway/local.gateway";
 import { CloudBridge } from "./modules/websocket/gateway/cloud.gateway";
 
 export async function buildApp(): Promise<FastifyInstance> {
-  const app = fastify({
-  });
+  const app = fastify({});
 
   // ========== PLUGINS ==========
   await app.register(cors, { origin: true, credentials: true });
@@ -24,6 +24,7 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   await app.register(authModule, { prefix: "/api/auth" });
   await app.register(itemRoutes, { prefix: "/api/items" });
+  await app.register(orderRoutes, { prefix: "/api/orders" });
 
   await app.register(registerLocalGateway);
   console.log("registered local ws");

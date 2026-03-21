@@ -15,7 +15,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { X } from "lucide-react";
+import { X, Clock } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface Props {
   order: KdsOrderPayload;
@@ -26,38 +27,82 @@ export default function OrderCard({ order, ws }: Props) {
   const { updateOrder, toggleItemStatus, removeOrder, updateItemStatus } =
     useOrdersStore();
 
-  const isCompleted = order.status === "COMPLETED";
+  const isInQueue = order.status === "IN QUEUE";
+  const isReady = order.status === "READY";
 
-  // 1. Logic: Order can be "Done" if all non-rejected items are "PREPARED"
+  // Minutes Waiting counter for READY orders
+  const [minutesWaiting, setMinutesWaiting] = useState(0);
+
+  useEffect(() => {
+    if (!isReady) return;
+
+    const readyTime = order.readyAt
+      ? new Date(order.readyAt).getTime()
+      : Date.now();
+    const calculateMinutes = () => {
+      const diff = Date.now() - readyTime;
+      return Math.floor(diff / 60000);
+    };
+
+    setMinutesWaiting(calculateMinutes());
+    const interval = setInterval(() => {
+      setMinutesWaiting(calculateMinutes());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, [isReady, order]);
+
+  // Logic: Order can be "Ready" if all non-rejected items are "PREPARED"
   const activeItems = order.items.filter((item) => item.status !== "REJECTED");
   const allPrepared =
     activeItems.length > 0 &&
     activeItems.every((item) => item.status === "PREPARED");
-  const canComplete = !isCompleted && allPrepared;
+  const canMarkReady = isInQueue && allPrepared;
 
   /**
-   * Finalizes the order and notifies the backend.
+   * Mark order as READY (food cooked, waiting for pickup)
    */
-  const handleDone = () => {
+  const handleMarkReady = () => {
     if (!ws || ws.readyState !== WebSocket.OPEN) {
       toast.error("Kitchen Server Offline");
       return;
     }
 
-    // Update local state
-    updateOrder(order._id, "COMPLETED");
+    updateOrder(order._id, "READY");
 
-    // Notify backend
     ws.send(
       JSON.stringify({
         event: "order_update",
         payload: {
           _id: order._id,
-          status: "COMPLETED",
+          status: "READY",
         },
       }),
     );
-    toast.success(`Order #${order.token} marked as Ready`);
+    toast.success(`Order #${order.token} marked as Ready for pickup`);
+  };
+
+  /**
+   * Mark order as DELIVERED (food picked up by student)
+   */
+  const handleMarkDelivered = () => {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      toast.error("Kitchen Server Offline");
+      return;
+    }
+
+    updateOrder(order._id, "DELIVERED");
+
+    ws.send(
+      JSON.stringify({
+        event: "order_update",
+        payload: {
+          _id: order._id,
+          status: "DELIVERED",
+        },
+      }),
+    );
+    toast.success(`Order #${order.token} delivered to student`);
   };
 
   /**
@@ -90,10 +135,8 @@ export default function OrderCard({ order, ws }: Props) {
       return;
     }
 
-    // Update local state immediately
     updateItemStatus(order._id, itemId, "REJECTED");
 
-    // Send item update event
     ws.send(
       JSON.stringify({
         event: "item_update",
@@ -108,6 +151,41 @@ export default function OrderCard({ order, ws }: Props) {
     toast.info("Item rejected - Notification sent to POS");
   };
 
+  // Get button text and handler based on order status
+  const getActionButton = () => {
+    if (isInQueue) {
+      return {
+        text: "Mark Ready",
+        handler: handleMarkReady,
+        disabled: !canMarkReady,
+      };
+    }
+    if (isReady) {
+      return {
+        text: "Mark Delivered",
+        handler: handleMarkDelivered,
+        disabled: false,
+      };
+    }
+    if (order.status === "DELIVERED") {
+      return {
+        text: "✓ Delivered",
+        handler: () => {},
+        disabled: true,
+      };
+    }
+    if (order.status === "CANCELLED") {
+      return {
+        text: "✗ Cancelled",
+        handler: () => {},
+        disabled: true,
+      };
+    }
+    return { text: "Mark Ready", handler: handleMarkReady, disabled: true };
+  };
+
+  const actionButton = getActionButton();
+
   return (
     <Card
       className="text-[#333] relative h-72 flex flex-col justify-between bg-white p-4 
@@ -117,19 +195,28 @@ export default function OrderCard({ order, ws }: Props) {
         {/* Header Section */}
         <div className="flex justify-between items-center mb-2">
           <h1 className="text-2xl font-black">#{order.token}</h1>
-          <span
-            className={`text-xs px-2 py-0.5 rounded-full font-bold uppercase ${
-              order.source === "CLOUD"
-                ? "bg-blue-100 text-blue-600"
-                : "bg-gray-100 text-gray-600"
-            }`}
-          >
-            {order.source}
-          </span>
+          <div className="flex items-center gap-2">
+            {/* Minutes Waiting Badge for READY orders */}
+            {isReady && (
+              <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-bold bg-orange-100 text-orange-600">
+                <Clock className="w-3 h-3" />
+                {minutesWaiting}m
+              </span>
+            )}
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full font-bold uppercase ${
+                order.source === "CLOUD"
+                  ? "bg-blue-100 text-blue-600"
+                  : "bg-gray-100 text-gray-600"
+              }`}
+            >
+              {order.source}
+            </span>
+          </div>
         </div>
 
-        {/* Cancel Order Icon (X) */}
-        {!isCompleted && (
+        {/* Cancel Order Icon (X) - only in IN QUEUE */}
+        {isInQueue && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <X className="absolute top-4 right-4 text-gray-400 cursor-pointer hover:text-red-500 transition-colors" />
@@ -171,7 +258,7 @@ export default function OrderCard({ order, ws }: Props) {
                 status={item.status}
                 onCheck={() => toggleItemStatus(order._id, item._id)}
                 onReject={() => handleRejectItem(item._id)}
-                disabled={isCompleted}
+                disabled={!isInQueue}
               />
             ))}
           </div>
@@ -182,10 +269,10 @@ export default function OrderCard({ order, ws }: Props) {
       <Button
         className="w-full bg-gradient-to-r from-[#667eea] to-[#764ba2] 
             hover:from-[#5a6fd8] hover:to-[#6a3f8f] text-white font-semibold"
-        disabled={!canComplete}
-        onClick={handleDone}
+        disabled={actionButton.disabled}
+        onClick={actionButton.handler}
       >
-        {isCompleted ? "✓ Order Ready" : "Mark as Done"}
+        {actionButton.text}
       </Button>
     </Card>
   );

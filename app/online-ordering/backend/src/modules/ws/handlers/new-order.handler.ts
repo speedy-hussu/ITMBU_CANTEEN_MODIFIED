@@ -4,6 +4,18 @@ import { CloudWSManager } from "../ws-manager";
 
 export const handleNewOrder = (payload: any) => {
   const manager = CloudWSManager.getInstance();
+
+  // Check if canteen is in DRAINING mode - reject new orders
+  if (manager.getCanteenMode() === "DRAINING") {
+    console.log("🚰 Canteen is DRAINING - rejecting new order");
+    manager.sendToClient(payload.enrollmentId, "order_ack", {
+      token: payload.token,
+      status: "REJECTED",
+      message: "Canteen is currently not accepting new orders",
+    });
+    return;
+  }
+
   const bridgeId = (
     Array.from((manager as any).clients.values()) as any[]
   ).find((c: any) => c.role === "LOCAL_BRIDGE")?.id;

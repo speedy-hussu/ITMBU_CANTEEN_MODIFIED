@@ -1,12 +1,13 @@
 // offline/frontend/src/store/notificationStore.ts
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 interface OrderNotification {
   _id: string;
   token: string;
   status: string;
   refundedAmount: number;
-  rejectedCount: number; // Added to match our Backend Service logic
+  rejectedCount: number;
   timestamp: number;
 }
 
@@ -14,46 +15,59 @@ interface NotificationState {
   notifications: OrderNotification[];
   syncNotification: (payload: any) => void;
   dismissNotification: (orderId: string) => void;
+  clearAllNotifications: () => void;
 }
 
-export const useNotificationStore = create<NotificationState>((set) => ({
-  notifications: [],
+const STORAGE_KEY = "pos_notifications";
 
-  syncNotification: (payload) =>
-    set((state) => {
-      const existing = state.notifications.find((n) => n._id === payload._id);
+export const useNotificationStore = create<NotificationState>()(
+  persist(
+    (set, get) => ({
+      notifications: [],
 
-      if (existing) {
-        // Update existing notification with latest status and refund from server
-        return {
-          notifications: state.notifications.map((n) =>
+      syncNotification: (payload) => {
+        const current = get().notifications;
+        const existing = current.find((n) => n._id === payload._id);
+
+        let updated: OrderNotification[];
+        if (existing) {
+          updated = current.map((n) =>
             n._id === payload._id
               ? {
                   ...n,
                   status: payload.status,
-                  refundedAmount: payload.refundedAmount, // This is now the "Final Truth" [cite: 2026-01-31]
+                  refundedAmount: payload.refundedAmount,
                   rejectedCount: payload.rejectedCount,
                   timestamp: Date.now(),
                 }
               : n,
-          ),
-        };
-      } else {
-        // Create new notification if it doesn't exist (e.g., POS just opened)
-        const newEntry: OrderNotification = {
-          _id: payload._id,
-          token: payload.token || "???",
-          status: payload.status,
-          refundedAmount: payload.refundedAmount || 0,
-          rejectedCount: payload.rejectedCount || 0,
-          timestamp: Date.now(),
-        };
-        return { notifications: [newEntry, ...state.notifications] };
-      }
-    }),
+          );
+        } else {
+          const newEntry: OrderNotification = {
+            _id: payload._id,
+            token: payload.token || "???",
+            status: payload.status,
+            refundedAmount: payload.refundedAmount || 0,
+            rejectedCount: payload.rejectedCount || 0,
+            timestamp: Date.now(),
+          };
+          updated = [newEntry, ...current];
+        }
 
-  dismissNotification: (orderId) =>
-    set((state) => ({
-      notifications: state.notifications.filter((n) => n._id !== orderId),
-    })),
-}));
+        set({ notifications: updated });
+      },
+
+      dismissNotification: (orderId) => {
+        const filtered = get().notifications.filter((n) => n._id !== orderId);
+        set({ notifications: filtered });
+      },
+
+      clearAllNotifications: () => {
+        set({ notifications: [] });
+      },
+    }),
+    {
+      name: STORAGE_KEY,
+    },
+  ),
+);

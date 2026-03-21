@@ -1,13 +1,13 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { getItemsController } from "./controllers/item.controller";
+import { getItems } from "./item.controller";
 
 /**
  * Item routes – mounted with prefix, e.g. `/api/items` in the main app file.
  */
 export default async function itemRoutes(app: FastifyInstance) {
   // Fetch all items
-  app.get("/getItems", async (req: FastifyRequest, reply: FastifyReply) =>
-    getItemsController(app, req, reply),
+  app.get("/", async (req: FastifyRequest, reply: FastifyReply) =>
+    getItems(app, req, reply),
   );
 
   // Create a new item

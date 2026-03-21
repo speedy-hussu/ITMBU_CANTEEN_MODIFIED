@@ -7,14 +7,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuthStore } from "@/store/authStore";
 import AppCartItem from "@/components/STUDENT/cart-item";
 
-import type { PosOrderPayload, WSMessage } from "@shared/types";
+import type { PosOrderPayload, WSMessage, CanteenMode } from "@shared/types";
 
 interface CartProps {
   ws: WebSocket | null;
-  kdsOnline: boolean; // ✅ Add KDS status prop
+  canteenMode: CanteenMode;
 }
 
-export default function Cashout({ ws, kdsOnline }: CartProps) {
+export default function Cashout({ ws, canteenMode }: CartProps) {
   const { cart, emptyCart, getCartTotal } = useCartStore();
   const { addOrder } = useOrderStore();
   const cartTotal = getCartTotal();
@@ -27,11 +27,12 @@ export default function Cashout({ ws, kdsOnline }: CartProps) {
   }
 
   const placeOrder = () => {
-    // ✅ Check if WebSocket is connected
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
-      toast.error("Not connected to server", {
-        description: "Please check your internet connection",
-      });
+    if (canteenMode === "DRAINING" || canteenMode === "OFFLINE") {
+      toast.error(
+        canteenMode === "DRAINING"
+          ? "Kitchen is closing - no new orders"
+          : "Kitchen is offline",
+      );
       return;
     }
 
@@ -39,6 +40,14 @@ export default function Cashout({ ws, kdsOnline }: CartProps) {
     if (cart.length === 0) {
       toast.error("Cart is empty", {
         description: "Add items to your cart before placing an order",
+      });
+      return;
+    }
+
+    // ✅ Check if WebSocket is connected
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      toast.error("Not connected to server", {
+        description: "Please check your internet connection",
       });
       return;
     }
@@ -119,14 +128,20 @@ export default function Cashout({ ws, kdsOnline }: CartProps) {
         {cart.length > 0 && (
           <div>
             <Button
-              disabled={!kdsOnline}
-              className={`w-full h-12 sm:h-14 text-base sm:text-lg font-semibold text-white transition-all ${"bg-orange-500 hover:bg-orange-600"}`}
+              disabled={canteenMode !== "ONLINE"}
+              className={`w-full h-12 sm:h-14 text-base sm:text-lg font-semibold text-white transition-all ${
+                canteenMode === "ONLINE"
+                  ? "bg-orange-500 hover:bg-orange-600"
+                  : "bg-gray-400 cursor-not-allowed"
+              }`}
               onClick={placeOrder}
             >
-              {kdsOnline ? (
+              {canteenMode === "ONLINE" ? (
                 <>PAY ₹{cartTotal.toFixed(2)}</>
+              ) : canteenMode === "DRAINING" ? (
+                "Kitchen is closing - Orders paused"
               ) : (
-                "Kitchen is Offline Try After Sometime"
+                "Kitchen is Offline - Try later"
               )}
             </Button>
           </div>

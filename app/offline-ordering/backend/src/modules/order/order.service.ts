@@ -66,21 +66,20 @@ export class OrderService {
       let updateQuery: any = { $set: { status: newStatus } };
       let options: any = { new: true };
 
-      // 2. Handle Bulk Item Status Sync [cite: 2026-01-25]
-      if (newStatus === "COMPLETED") {
+      // 2. Handle status-specific updates
+      if (newStatus === "READY") {
+        updateQuery.$set.readyAt = new Date().toISOString();
+      }
+      if (newStatus === "DELIVERED" || newStatus === "CANCELLED") {
         updateQuery.$set["items.$[elem].status"] = "PREPARED";
         options.arrayFilters = [{ "elem.status": { $ne: "REJECTED" } }];
       }
-      if (newStatus === "CANCELLED") {
-        updateQuery.$set["items.$[elem].status"] = "REJECTED";
-        options.arrayFilters = [{ "elem.status": { $exists: true } }];
-      }
 
-      // 3. Fetch current state to calculate the FINAL refund [cite: 2026-01-31]
+      // 3. Fetch current state to calculate the FINAL refund
       const orderSnapshot = await OrderModel.findById(orderId);
       if (!orderSnapshot) return null;
 
-      if (newStatus === "COMPLETED" || newStatus === "CANCELLED") {
+      if (newStatus === "DELIVERED" || newStatus === "CANCELLED") {
         const totalRefund =
           newStatus === "CANCELLED"
             ? orderSnapshot.totalAmount

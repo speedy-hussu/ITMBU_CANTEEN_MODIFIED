@@ -25,15 +25,23 @@ export class WSManager {
     if (role === "KDS") {
       this.flushPendingOrders(socket);
 
-      // Send current cloud status to KDS
+      // Send current cloud connection status to KDS
       const cloudStatus = CloudBridge.getInstance().getCloudStatus();
+      socket.send(
+        JSON.stringify({
+          event: "cloud_status",
+          payload: { connected: cloudStatus },
+        }),
+      );
 
-      const cloudStatusResponse = {
-        event: "cloud_status",
-        payload: { connected: cloudStatus },
-      };
-
-      socket.send(JSON.stringify(cloudStatusResponse));
+      // Send current canteen mode to KDS
+      const canteenMode = CloudBridge.getInstance().getCanteenMode();
+      socket.send(
+        JSON.stringify({
+          event: "canteen_status",
+          payload: { mode: canteenMode },
+        }),
+      );
     }
   }
 

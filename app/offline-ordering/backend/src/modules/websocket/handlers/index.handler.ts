@@ -4,7 +4,7 @@ import { handleOrderStatusUpdate } from "./order-status.handler";
 import { ClientMeta } from "../shared/types";
 import { WSMessage, WSEvent } from "@shared/types/websocket.types";
 import { handleItemStatusUpdate } from "./item-status.handle";
-import { handleCanteenStatusToggle } from "./canteen-status-toggle";
+import { handleKdsModeSwitch } from "./canteen-status.handler";
 
 export async function handleWSMessage(
   socket: WebSocket,
@@ -27,7 +27,7 @@ export async function handleWSMessage(
       return await handleItemStatusUpdate(socket, payload, meta);
 
     case "canteen_toggle":
-      return await handleCanteenStatusToggle(socket, payload, meta);
+      return await handleKdsModeSwitch(socket, payload, meta);
 
     case "ping":
       socket.send(

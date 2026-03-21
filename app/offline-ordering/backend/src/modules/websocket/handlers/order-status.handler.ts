@@ -6,6 +6,8 @@ import {
   ErrorPayload,
 } from "@shared/types/websocket.types";
 import type { WebSocket } from "ws";
+import { CloudBridge } from "../gateway/cloud.gateway";
+import { OrderUtils } from "../utils/util";
 
 export async function handleOrderStatusUpdate(
   socket: WebSocket,
@@ -63,4 +65,18 @@ export async function handleOrderStatusUpdate(
 
   // 3. EXECUTION: Now call the service
   await OrderService.getInstance().orderUpdateStatus(orderId, payload.status);
+
+  // Check auto-drain after order update
+  const currentMode = CloudBridge.getInstance().getCanteenMode();
+  console.log(`🔍 Auto-drain check: mode=${currentMode}, orderId=${orderId}`);
+
+  if (currentMode === "DRAINING") {
+    const cloudOrdersLeft = await OrderUtils.getActiveCloudOrdersCount();
+    console.log(`🔍 Active cloud orders remaining: ${cloudOrdersLeft}`);
+
+    if (cloudOrdersLeft === 0) {
+      console.log("🏁 All Cloud orders cleared. Disconnecting Bridge.");
+      CloudBridge.getInstance().updateCanteenMode("OFFLINE");
+    }
+  }
 }

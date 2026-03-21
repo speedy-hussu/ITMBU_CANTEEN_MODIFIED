@@ -18,6 +18,7 @@ interface OrdersState {
     itemId: string,
     status: ItemStatus,
   ) => void;
+  setOrders: (orders: DbOrder[]) => void;
 }
 
 export const useOrdersStore = create<OrdersState>((set) => ({
@@ -81,5 +82,17 @@ export const useOrdersStore = create<OrdersState>((set) => ({
     set((state) => {
       const remaining = state.orders.filter((o) => o._id !== orderId);
       return { orders: remaining, TotalOrders: remaining.length };
+    }),
+
+  setOrders: (orders) =>
+    set(() => {
+      const kdsOrders: KdsOrderPayload[] = orders.map((o) => ({
+        ...o,
+        items: o.items.map((item) => ({
+          ...item,
+          status: (item as any).status || "PREPARING",
+        })),
+      }));
+      return { orders: kdsOrders, TotalOrders: kdsOrders.length };
     }),
 }));

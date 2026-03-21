@@ -4,13 +4,14 @@ import WS from "ws";
 import { WSManager } from "../ws.manager";
 import { handleWSMessage } from "../handlers/index.handler";
 import { ClientRole } from "../shared/types";
+import { CanteenMode, SystemStatus } from "src/types/types";
 
 export class CloudBridge {
   private static instance: CloudBridge;
   private rws: ReconnectingWebSocket | null = null;
   private deviceId = "LOCAL_SERVER_01";
   private role: ClientRole = "CLOUD";
-  private isManuallyPaused = false;
+  private currentMode: CanteenMode = "OFFLINE";
   private constructor() {
     this.connect();
   }
@@ -20,35 +21,49 @@ export class CloudBridge {
     return this.instance;
   }
 
-  // Get current cloud connection status
+  // Get current cloud connection status from real-time readyState
   public getCloudStatus(): boolean {
-    const isPaused = this.isManuallyPaused;
-    const isConnected = !isPaused && this.rws?.readyState === 1;
-    return isConnected;
+    return this.rws?.readyState === 1;
   }
 
-  // Toggle cloud sync on/off
-  public toggleCloudSync() {
-    // 1. Invert the state
-    this.isManuallyPaused = !this.isManuallyPaused;
+  // Get full system status
+  public getSystemStatus(): SystemStatus {
+    return {
+      isCloudConnected: this.getCloudStatus(),
+      canteenMode: this.currentMode,
+    };
+  }
 
-    if (this.isManuallyPaused) {
-      // 2. If now paused, close the connection
-      console.log("🛑 Action: Manual Disconnect");
-      this.rws?.close(1000, "KDS_MANUAL_OFFLINE");
-    } else {
-      // 3. If now unpaused, reconnect
-      console.log("🟢 Action: Manual Reconnect");
-      if (this.rws) {
-        this.rws.reconnect();
-      } else {
-        this.connect();
-      }
+  // Update canteen mode and notify cloud + KDS
+  public updateCanteenMode(mode: CanteenMode) {
+    this.currentMode = mode;
+    console.log(`🔄 Canteen mode updated to: ${mode}`);
+
+    // Notify cloud about mode change
+    if (this.rws && this.rws.readyState === 1) {
+      this.rws.send(
+        JSON.stringify({
+          event: "canteen_status",
+          payload: { mode },
+        }),
+      );
     }
 
-    // 4. Return the new state so the KDS UI can update immediately
-    return this.isManuallyPaused;
+    // Logic Gate: OFFLINE = close socket, ONLINE = reconnect if needed
+    if (mode === "OFFLINE") {
+      console.log("🛑 Closing Cloud Bridge - OFFLINE mode");
+      this.rws?.close(1000, "GRACEFUL_SHUTDOWN");
+    } else if (mode === "ONLINE" && this.rws && this.rws.readyState !== 1) {
+      console.log("🟢 Reconnecting to Cloud - ONLINE mode");
+      this.rws.reconnect();
+    }
   }
+
+  // Get current canteen mode
+  public getCanteenMode(): CanteenMode {
+    return this.currentMode;
+  }
+
   private connect() {
     const url = process.env.CLOUD_WS_URL || "ws://localhost:5000/ws/bridge";
 
@@ -68,9 +83,13 @@ export class CloudBridge {
         this.role,
         this.rws as any,
       );
-      (this.rws as any).send(
-        JSON.stringify({ event: "cloud_status", payload: { connected: true } }),
-      );
+      // Update mode to ONLINE
+      this.currentMode = "ONLINE";
+      // Broadcast cloud_status to KDS
+      WSManager.getInstance().broadcastToRole("KDS", {
+        event: "cloud_status",
+        payload: { connected: true },
+      });
     });
 
     // Use { data } destructuring for cleaner code in Node.js
@@ -93,16 +112,11 @@ export class CloudBridge {
     this.rws.addEventListener("close", () => {
       console.log("❌ Cloud connection lost. RWS will handle retry.");
       WSManager.getInstance().removeClient(this.deviceId);
-
-      // Notify about cloud disconnection
-      if (this.rws && this.rws.readyState === 1) {
-        (this.rws as any).send(
-          JSON.stringify({
-            event: "cloud_status",
-            payload: { connected: false },
-          }),
-        );
-      }
+      // Broadcast cloud_status to KDS
+      WSManager.getInstance().broadcastToRole("KDS", {
+        event: "cloud_status",
+        payload: { connected: false },
+      });
     });
   }
 }

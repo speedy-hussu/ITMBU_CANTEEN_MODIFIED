@@ -21,7 +21,7 @@ import UserProfile from "./pages/Profile";
 import Nav from "./components/STUDENT/Nav";
 
 // Types
-import { type WSMessage } from "@shared/types/websocket.types";
+import type { WSMessage, CanteenMode } from "@shared/types/websocket.types";
 import { getMe, logoutUser } from "./api/api";
 
 const queryClient = new QueryClient();
@@ -30,7 +30,7 @@ function App() {
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [, setConnectionError] = useState(false);
-  const [kdsOnline, setKdsOnline] = useState(false);
+  const [canteenMode, setCanteenMode] = useState<CanteenMode>("OFFLINE");
 
   // Zustand State
   const { user } = useAuthStore();
@@ -102,10 +102,14 @@ function App() {
         console.log(msg.data);
         switch (data.event) {
           case "canteen_status":
-            setKdsOnline(data.payload.online);
-            toast[data.payload.online ? "success" : "warning"](
-              data.payload.online ? "Kitchen is online" : "Kitchen is offline",
-            );
+            setCanteenMode(data.payload.mode);
+            if (data.payload.mode === "ONLINE") {
+              toast.success("Kitchen is now online!");
+            } else if (data.payload.mode === "DRAINING") {
+              toast.warning("Kitchen is closing - no new orders accepted");
+            } else {
+              toast.error("Kitchen is currently offline");
+            }
             break;
 
           case "order_ack":
@@ -167,7 +171,6 @@ function App() {
     socket.onclose = () => {
       setWs(null);
       setIsConnecting(false);
-      setKdsOnline(false);
 
       // Auto-reconnect after 3 seconds if still authenticated
       if (isAuthenticated) {
@@ -222,7 +225,7 @@ function App() {
               path="/cart"
               element={
                 isAuthenticated ? (
-                  <Cashout ws={ws} kdsOnline={kdsOnline} />
+                  <Cashout ws={ws} canteenMode={canteenMode} />
                 ) : (
                   <Navigate to="/login" replace />
                 )
@@ -254,7 +257,7 @@ function App() {
           </Routes>
         </div>
         <Toaster position="top-center" richColors />
-        {isAuthenticated && <Nav kdsOnline={kdsOnline} />}
+        {isAuthenticated && <Nav canteenMode={canteenMode} />}
       </Router>
     </QueryClientProvider>
   );

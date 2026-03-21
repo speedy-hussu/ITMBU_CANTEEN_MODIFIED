@@ -7,6 +7,7 @@ import { handleOrderAck } from "./order-ack.handler";
 import { WSMessage } from "@shared/types/websocket.types";
 import { ClientMeta } from "../shared/types";
 import { CloudWSManager } from "../ws-manager";
+import { handleCanteenStatus } from "./canteen-status.handler";
 
 export async function handleWSMessage(
   socket: WebSocket,
@@ -30,6 +31,10 @@ export async function handleWSMessage(
 
     case "item_update":
       return handleItemUpdate(payload);
+
+    case "canteen_status":
+      // Handle canteen mode changes from local backend (or any source)
+      return handleCanteenStatus(payload, manager);
 
     case "pong":
       manager.updateLastSeen(meta.id);

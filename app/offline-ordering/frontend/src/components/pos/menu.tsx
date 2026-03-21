@@ -21,8 +21,7 @@ type CategoryType = "All" | "Product" | "Dish";
 function Menu() {
   const [category, setCategory] = useState<CategoryType>("All");
   const [searchTerm, setSearchTerm] = useState<string>("");
- const [menuItems, setMenuItems] = useState<BaseItem[]>([]);
-  
+  const [menuItems, setMenuItems] = useState<BaseItem[]>([]);
 
   //  const canteenItems: CanteenItem[] = [
   //   {
@@ -194,19 +193,19 @@ function Menu() {
   // ];
 
   // ✅ MongoDB se items fetch
-    useEffect(() => {
-      const fetchItems = async () => {
-        try {
-          const res = await api.get<BaseItem[]>("/items/getItems");
-          setMenuItems(res.data);
-        } catch (err) {
-          console.error("Error fetching items:", err);
-          toast.error("Failed to fetch menu items");
-        }
-      };
-      fetchItems();
-    }, []);
-
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        const res = await api.get<BaseItem[]>("/items");
+        setMenuItems(res.data);
+        console.log(res);
+      } catch (err) {
+        console.error("Error fetching items:", err);
+        toast.error("Failed to fetch menu items");
+      }
+    };
+    fetchItems();
+  }, []);
 
   const categories: CategoryType[] = ["All", "Product", "Dish"];
 

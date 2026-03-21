@@ -1,11 +1,20 @@
 import { useState } from "react";
 import { Button } from "../ui/button";
 import { useCartStore } from "@/store/cartStore";
-import { Clock, Home, ShoppingCart, User, Wifi, WifiOff } from "lucide-react";
+import {
+  Clock,
+  Home,
+  ShoppingCart,
+  User,
+  Wifi,
+  WifiOff,
+  AlertCircle,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "../ui/badge";
+import type { CanteenMode } from "@shared/types/websocket.types";
 
-export default function Nav({ kdsOnline }: { kdsOnline: boolean }) {
+export default function Nav({ canteenMode }: { canteenMode: CanteenMode }) {
   const [currentView, setCurrentView] = useState<
     "menu" | "cart" | "history" | "profile"
   >("menu");
@@ -79,11 +88,27 @@ export default function Nav({ kdsOnline }: { kdsOnline: boolean }) {
         </Button>
         <div
           className={`text-center text-xs ${
-            kdsOnline ? "text-green-500" : "text-red-500"
+            canteenMode === "ONLINE"
+              ? "text-green-500"
+              : canteenMode === "DRAINING"
+                ? "text-yellow-500"
+                : "text-red-500"
           } p-2`}
         >
           <span className="flex items-center gap-1">
-            KDS: {kdsOnline ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
+            {canteenMode === "ONLINE" ? (
+              <>
+                KDS: <Wifi className="w-3 h-3" />
+              </>
+            ) : canteenMode === "DRAINING" ? (
+              <>
+                KDS: <AlertCircle className="w-3 h-3" />
+              </>
+            ) : (
+              <>
+                KDS: <WifiOff className="w-3 h-3" />
+              </>
+            )}
           </span>
         </div>
       </div>

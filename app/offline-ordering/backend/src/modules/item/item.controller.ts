@@ -1,13 +1,13 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import Item from "../../../database/models/item.model";
+import Item from "../../database/models/item.model";
 
 /**
  * Fetch all items
  */
-export async function getItemsController(
+export async function getItems(
   app: FastifyInstance,
   _req: FastifyRequest,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   try {
     const items = await Item.find().lean();
@@ -94,12 +94,3 @@ export async function getItemsController(
 //     return reply.status(500).send({ error: error.message });
 //   }
 // }
-
-export const ItemController = {
-  // addItem: addItemController,
-  getItems: getItemsController,
-  // updateItem: updateItemController,
-  // deleteItem: deleteItemController,
-};
-
-export default ItemController;

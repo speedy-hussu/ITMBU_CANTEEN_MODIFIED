@@ -3,11 +3,10 @@ import type { ItemStatus } from "./item.types";
 import type { DbOrder, PosOrderPayload, OrderStatus } from "./order.types";
 
 // Only what is actually used in the Offline <=> Online flow
-
 export type WSEvent =
-  | "canteen_toggle" // for toggling canteen status
-  | "canteen_status" // for canteen status updates
-  | "cloud_status" // for cloud status updates
+  | "canteen_toggle" // KDS requests mode change (payload: { mode?: "ONLINE" | "DRAINING" | "OFFLINE" })
+  | "canteen_status" // Backend broadcasts current mode to all clients (KDS, Users, Cloud)
+  | "cloud_status" // Cloud connection status updates
   | "new_order" // POS or Cloud sending an order
   | "order_update" // KDS updating order status
   | "item_update"
@@ -16,6 +15,8 @@ export type WSEvent =
   | "error" // Generic error reporting
   | "ping"
   | "pong";
+
+export type CanteenMode = "ONLINE" | "DRAINING" | "OFFLINE";
 
 export interface WSMessage<T = any> {
   event: WSEvent;

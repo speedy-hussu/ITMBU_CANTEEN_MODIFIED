@@ -3,7 +3,8 @@ import type { CartItem, KdsItem } from "./item.types";
 
 export type OrderStatus =
   | "IN QUEUE"
-  | "COMPLETED"
+  | "READY"
+  | "DELIVERED"
   | "CANCELLED"
   | "NOT RECEIVED";
 export type OrderSource = "LOCAL" | "CLOUD";
@@ -19,7 +20,8 @@ export interface OrderBase<I> {
   status: OrderStatus;
   source: OrderSource;
   isSyncedToCloudDB: boolean;
-  createdAt: string; //for kds sorting
+  createdAt: string;
+  readyAt?: string;
 }
 
 // 2. What POS/Cloud sends
@@ -27,7 +29,7 @@ export type PosOrderPayload = Omit<
   OrderBase<CartItem>,
   | "_id"
   | "status"
-  | "source" 
+  | "source"
   | "createdAt"
   | "refundedAmount"
   | "isSyncedToCloudDB"

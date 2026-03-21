@@ -44,7 +44,7 @@ const OrderSchema = new Schema(
     status: {
       type: String,
       // 👽 Updated to match your shared types logic
-      enum: ["IN QUEUE", "COMPLETED", "CANCELLED", "NOT RECEIVED"],
+      enum: ["IN QUEUE", "READY", "DELIVERED", "CANCELLED", "NOT RECEIVED"],
       default: "IN QUEUE",
       required: true,
       index: true,
@@ -60,7 +60,7 @@ const OrderSchema = new Schema(
       default: false,
     },
     createdAt: { type: String, required: true },
-    completedAt: { type: String, required: false },
+    readyAt: { type: String, required: false },
   },
   {
     timestamps: false,

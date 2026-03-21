@@ -1,6 +1,6 @@
 import { WebSocket } from "ws";
 import { ClientRole } from "./shared/types";
-import { WSEvent } from "@shared/types";
+import { WSEvent, CanteenMode } from "@shared/types";
 
 interface CloudClient {
   socket: WebSocket;
@@ -13,6 +13,7 @@ export class CloudWSManager {
   private static instance: CloudWSManager;
   private clients = new Map<string, CloudClient>();
   private offlineCache = new Map<string, any[]>();
+  private canteenMode: CanteenMode = "OFFLINE";
 
   // 🚩 Heartbeat timer reference
   private bridgeHeartbeat: NodeJS.Timeout | null = null;
@@ -36,13 +37,18 @@ export class CloudWSManager {
 
     if (role === "USER") {
       this.sendToClient(id, "canteen_status", {
-        online: this.isBridgeConnected(),
+        mode: this.getCanteenMode(),
+        timestamp: Date.now(),
       });
       this.flushOfflineCache(id);
     }
 
     if (role === "LOCAL_BRIDGE") {
-      this.broadcastToRole("USER", "canteen_status", { online: true });
+      this.setCanteenMode("ONLINE");
+      this.broadcastToRole("USER", "canteen_status", {
+        mode: "ONLINE",
+        timestamp: Date.now(),
+      });
 
       // 🚩 Start the heartbeat only if it's not already running
       if (!this.bridgeHeartbeat) {
@@ -87,7 +93,11 @@ export class CloudWSManager {
   removeClient(id: string) {
     const client = this.clients.get(id);
     if (client?.role === "LOCAL_BRIDGE") {
-      this.broadcastToRole("USER", "canteen_status", { online: false });
+      this.setCanteenMode("OFFLINE");
+      this.broadcastToRole("USER", "canteen_status", {
+        mode: "OFFLINE",
+        timestamp: Date.now(),
+      });
 
       // 🚩 Cleanup: Stop heart if no more bridges are connected
       const hasOtherBridge = Array.from(this.clients.values()).some(
@@ -164,5 +174,15 @@ export class CloudWSManager {
         client.socket.send(message);
       }
     });
+  }
+
+  // Set and get canteen mode
+  setCanteenMode(mode: CanteenMode) {
+    this.canteenMode = mode;
+    console.log(`🏪 Cloud: Canteen mode set to: ${mode}`);
+  }
+
+  getCanteenMode(): CanteenMode {
+    return this.canteenMode;
   }
 }
