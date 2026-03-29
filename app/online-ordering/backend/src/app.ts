@@ -7,10 +7,12 @@ import websocket from "@fastify/websocket";
 import { authDecorator } from "./decorator/auth.decorator";
 
 // Routes
-import userItemRoute from "./modules/items/routes/user.route";
-import authRoutes from "./modules/auth/route";
+
 import { registerCloudWS } from "./modules/ws/cloud-gateway";
-import userRoutes from "./modules/user/route";
+import authRoutes from "./modules/user/auth/auth.route";
+import { orderRoutes } from "./modules/user/orders/orders.route";
+import itemRoutes from "./modules/user/items/items.route";
+import { adminRoutes } from "./modules/admin/admin.routes";
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = fastify();
@@ -19,6 +21,7 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   // CORS - Allow credentials for cookies
   const isProduction = process.env.NODE_ENV === "production";
+  console.log("isProduction", isProduction);
   await app.register(cors, {
     // 1. Explicitly name your production URL
     origin: isProduction ? "https://itmbu-canteen-modified.vercel.app" : true,
@@ -27,7 +30,7 @@ export async function buildApp(): Promise<FastifyInstance> {
 
     // 2. Be explicit with headers so preflight doesn't fail
     allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
   });
   // Cookie parser
   await app.register(cookie, {
@@ -61,9 +64,12 @@ export async function buildApp(): Promise<FastifyInstance> {
     uptime: process.uptime(),
   }));
 
+  //admin
+  await app.register(adminRoutes, { prefix: "/api/admin" });
+
   // API Routes
-  await app.register(userItemRoute, { prefix: "/api/items" });
-  await app.register(userRoutes, { prefix: "/api/user" });
+  await app.register(itemRoutes, { prefix: "/api/items" });
+  await app.register(orderRoutes, { prefix: "/api/user/orders" });
 
   // ========== WebSocket Routes ==========
 

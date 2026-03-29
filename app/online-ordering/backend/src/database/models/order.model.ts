@@ -6,7 +6,11 @@ const itemSchema = new mongoose.Schema({
   name: { type: String, required: true },
   price: { type: Number, required: true },
   quantity: { type: Number, required: true },
-  status: { type: String, enum: ["PENDING", "PREPARED", "REJECTED"], default: "PENDING" },
+  status: {
+    type: String,
+    enum: ["PENDING", "PREPARING", "COMPLETED", "REJECTED"],
+    default: "PENDING",
+  },
 });
 
 const orderSchema = new mongoose.Schema({

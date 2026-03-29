@@ -1,6 +1,6 @@
 // src/modules/user/user.controller.ts
 import { FastifyRequest, FastifyReply } from "fastify";
-import Order from "../../database/models/order.model";
+import Order from "../../../database/models/order.model";
 
 export const getUserOrdersHandler = async (
   request: FastifyRequest,

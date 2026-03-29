@@ -1,11 +1,12 @@
 // src/modules/auth/controller/auth.controller.ts
 import { FastifyRequest, FastifyReply } from "fastify";
+
 import { verifyUser } from "./auth.service";
 
 // src/modules/auth/controller/auth.controller.ts
 export const loginHandler = async (
   request: FastifyRequest,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) => {
   const { enrollmentId, password } = request.body as any;
   const user = await verifyUser(enrollmentId, password);
@@ -18,14 +19,15 @@ export const loginHandler = async (
     enrollmentId: user.enrollmentId,
   });
 
-reply.setCookie("token", token, {
-  path: "/",
-  secure: true, // Force true
-  httpOnly: true,
-  sameSite: "none", // Force none
-  maxAge: 60 * 60 * 24 * 7,
-});
+  const isProduction = process.env.NODE_ENV === "production";
 
+  reply.setCookie("token", token, {
+    path: "/",
+    secure: isProduction,
+    httpOnly: true,
+    sameSite: isProduction ? "none" : "lax",
+    maxAge: 60 * 60 * 24 * 7,
+  });
 
   // ✅ RETURN THE USER DATA
   // This allows the frontend to do: login(response.user)
@@ -39,7 +41,7 @@ reply.setCookie("token", token, {
 };
 export const logoutHandler = async (
   request: FastifyRequest,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) => {
   reply.clearCookie("token", { path: "/" });
   return { message: "Logged out" };
@@ -47,7 +49,7 @@ export const logoutHandler = async (
 
 export const meHandler = async (
   request: FastifyRequest,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) => {
   const user = request.user;
   return user;

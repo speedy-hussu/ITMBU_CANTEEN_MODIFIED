@@ -1,13 +1,11 @@
 // src/modules/user/route.ts
 import { FastifyInstance } from "fastify";
-import { getUserOrdersHandler } from "./user.controller";
+import { getUserOrdersHandler } from "./orders.controller";
 
-async function userRoutes(fastify: FastifyInstance) {
+export async function orderRoutes(fastify: FastifyInstance) {
   fastify.get(
-    "/orders",
+    "/",
     { onRequest: [fastify.authenticate] },
     getUserOrdersHandler,
   );
 }
-
-export default userRoutes;

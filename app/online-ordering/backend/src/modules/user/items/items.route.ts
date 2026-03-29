@@ -1,6 +1,6 @@
 // modules/items/routes/item.user.route.ts
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { getItemsController } from "../controllers/item.user.controller";
+import { getItemsController } from "./items.controller";
 
 export default async function itemRoutes(app: FastifyInstance) {
   console.log("📝 Registering item routes...");

@@ -1,6 +1,29 @@
 import "dotenv/config";
 import { buildApp } from "./app";
 import connectDB from "./database/connections/localDB.connection";
+
+// Handle WebSocket pre-connection errors when cloud server is sleeping
+process.on("uncaughtException", (err: Error) => {
+  if (
+    err.message?.includes(
+      "WebSocket was closed before the connection was established",
+    )
+  ) {
+    console.log("⚠️ Cloud server waking up, will retry connection...");
+    return;
+  }
+  console.error("Uncaught Exception:", err);
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (reason: any) => {
+  if (reason?.message?.includes("WebSocket was closed before")) {
+    console.log("⚠️ Cloud server waking up, will retry connection...");
+    return;
+  }
+  console.error("Unhandled Rejection:", reason);
+});
+
 connectDB();
 
 const PORT = Number(process.env.PORT) || 4000;

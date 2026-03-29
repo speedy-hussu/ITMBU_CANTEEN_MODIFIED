@@ -67,13 +67,30 @@ export class CloudBridge {
   private connect() {
     const url = process.env.CLOUD_WS_URL || "ws://localhost:5000/ws/bridge";
 
+    // Custom WebSocket class that catches errors on underlying sockets
+    // This prevents crashes when cloud server is sleeping
+    class ErrorHandlingWebSocket extends WS {
+      constructor(address: any, protocols?: any, options?: any) {
+        super(address, protocols, options);
+
+        // Catch errors on this underlying WebSocket instance
+        this.on("error", (err: Error) => {
+          // Silently ignore pre-connection close errors - RWS will retry
+          if (this.readyState === WS.CONNECTING) {
+            return;
+          }
+          console.error("Underlying WebSocket error:", err.message);
+        });
+      }
+    }
+
     this.rws = new ReconnectingWebSocket(url, [], {
-      WebSocket: WS,
-      connectionTimeout: 5000,
+      WebSocket: ErrorHandlingWebSocket,
+      connectionTimeout: 10000, // Increased for sleeping servers
       maxRetries: Infinity,
-      minReconnectionDelay: 5000,
+      minReconnectionDelay: 3000, // Faster initial retry
       maxReconnectionDelay: 60000,
-      reconnectionDelayGrowFactor: 1.3,
+      reconnectionDelayGrowFactor: 1.5,
     });
 
     this.rws.addEventListener("open", () => {

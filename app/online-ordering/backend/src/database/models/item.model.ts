@@ -5,14 +5,14 @@ import cloudDB from "../connections/cloudDB.connection"; // Import your connecti
 const itemSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
-    // Add your other fields here
     description: String,
     price: Number,
-    // ... etc
+    category: { type: String, default: "Dish" },
+    isAvailable: { type: Boolean, default: true },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // ⚠️ CRITICAL: Use cloudDB instead of mongoose.model()

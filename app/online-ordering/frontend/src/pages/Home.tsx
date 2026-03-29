@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import ItemCard from "@/components/STUDENT/item-card";
+import { getUserItems } from "@/api/api";
+import { toast } from "sonner";
 
 export const MASTER_MENU = [
   {
@@ -39,12 +41,40 @@ export const MASTER_MENU = [
 
 const categories = ["All", "Dish", "Product"];
 
+interface MenuItem {
+  _id: string;
+  name: string;
+  price: number;
+  category: string;
+  description?: string;
+  isAvailable?: boolean;
+}
+
 export default function Menu() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Use hardcoded items instead of API
-  const menuItems = MASTER_MENU;
+  // Fetch items from API
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        setIsLoading(true);
+        const response = await getUserItems();
+        setMenuItems(response.items || []);
+      } catch (error) {
+        console.error("Failed to fetch items:", error);
+        toast.error("Failed to load menu items");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchItems();
+    console.log(menuItems, "menu items");
+  }, []);
+
   const filteredItems = menuItems.filter((item) => {
     const matchesCategory =
       selectedCategory === "All" || item.category === selectedCategory;
@@ -95,11 +125,17 @@ export default function Menu() {
 
       {/* Menu Items Grid */}
       <div className="p-4 overflow-y-auto scrollbar-none ">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 ">
-          {filteredItems.map((item) => (
-            <ItemCard key={item._id} item={item} />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="flex items-center justify-center h-40">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 ">
+            {filteredItems.map((item) => (
+              <ItemCard key={item._id} item={item} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

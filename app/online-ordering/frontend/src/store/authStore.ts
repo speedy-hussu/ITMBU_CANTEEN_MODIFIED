@@ -5,8 +5,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 interface User {
   username: string;
   enrollmentId: string;
-  role: "STUDENT" | "FACULTY";
-  // token: string; // Note: Usually better to keep token in HTTP-only cookie, but safe to keep here for UI if needed
+  role: "STUDENT" | "FACULTY" | "ADMIN";
 }
 
 interface AuthState {
@@ -33,6 +32,6 @@ export const useAuthStore = create<AuthState>()(
     {
       name: "auth-storage", // This is the key in localStorage
       storage: createJSONStorage(() => localStorage),
-    }
-  )
+    },
+  ),
 );

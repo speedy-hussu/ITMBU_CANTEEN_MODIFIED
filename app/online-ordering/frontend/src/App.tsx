@@ -14,6 +14,8 @@ import { useOrderStore } from "./store/orderStore";
 
 // Components & Pages
 import Login from "./pages/Login";
+import AdminLogin from "./pages/AdminLogin";
+import AdminDashboard from "./pages/AdminDashboard";
 import Home from "./pages/Home";
 import Cashout from "./pages/Cashout";
 import MyOrders from "./pages/MyOrders";
@@ -22,7 +24,7 @@ import Nav from "./components/STUDENT/Nav";
 
 // Types
 import type { WSMessage, CanteenMode } from "@shared/types/websocket.types";
-import { getMe, logoutUser } from "./api/api";
+import { getMe, getAdminMe, logoutUser } from "./api/api";
 
 const queryClient = new QueryClient();
 
@@ -41,13 +43,15 @@ function App() {
   useEffect(() => {
     const validateAuth = async () => {
       // Only validate if we THINK we are authenticated
-      if (isAuthenticated) {
+      if (isAuthenticated && user) {
         try {
-          const response = await getMe();
+          // Use appropriate endpoint based on user role
+          const response =
+            user.role === "ADMIN" ? await getAdminMe() : await getMe();
+
           // If the server returns a user, ensure the store is synced
-          if (response.user) {
+          if (response.user || response.admin || response.username) {
             console.log("✅ Session verified");
-            // Optional: useAuthStore.getState().login(response.user);
           }
         } catch (error) {
           console.error("❌ Session expired, cleaning up...");
@@ -65,9 +69,14 @@ function App() {
     };
 
     validateAuth();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user]);
   // 1. WebSocket Lifecycle Management
   useEffect(() => {
+    // Skip WebSocket for admin users
+    if (user?.role === "ADMIN") {
+      return;
+    }
+
     if (!isAuthenticated) {
       if (ws) {
         ws.close(1000, "Logout");
@@ -184,10 +193,10 @@ function App() {
     return () => {
       // Keep socket alive during navigation, only close on logout/unmount
     };
-  }, [isAuthenticated, ws, updateStatus]);
+  }, [isAuthenticated, ws]);
 
-  // Loading Screen for WebSocket initialization
-  if (isAuthenticated && isConnecting) {
+  // Loading Screen for WebSocket initialization (skip for admins)
+  if (isAuthenticated && isConnecting && user?.role !== "ADMIN") {
     return (
       <div className="h-dvh w-full flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -205,11 +214,33 @@ function App() {
       <Router>
         <div className="min-h-[calc(100dvh-260px)] w-full max-w-3xl mx-auto px-4 pb-20">
           <Routes>
-            {/* Public Route */}
+            {/* Public Routes */}
             <Route
               path="/login"
               element={
                 !isAuthenticated ? <Login /> : <Navigate to="/" replace />
+              }
+            />
+            <Route
+              path="/admin/login"
+              element={
+                !isAuthenticated ? (
+                  <AdminLogin />
+                ) : (
+                  <Navigate to="/admin" replace />
+                )
+              }
+            />
+
+            {/* Admin Routes */}
+            <Route
+              path="/admin"
+              element={
+                isAuthenticated && user?.role === "ADMIN" ? (
+                  <AdminDashboard />
+                ) : (
+                  <Navigate to="/admin/login" replace />
+                )
               }
             />
 
@@ -256,7 +287,9 @@ function App() {
           </Routes>
         </div>
         <Toaster position="top-center" richColors />
-        {isAuthenticated && <Nav canteenMode={canteenMode} />}
+        {isAuthenticated && user?.role !== "ADMIN" && (
+          <Nav canteenMode={canteenMode} />
+        )}
       </Router>
     </QueryClientProvider>
   );
