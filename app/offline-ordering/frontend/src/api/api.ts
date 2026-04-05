@@ -6,8 +6,14 @@ const api = axios.create({
     "Content-Type": "application/json",
   },
   withCredentials: true,
-  xsrfCookieName: "csrf_token", // Add this
-  xsrfHeaderName: "X-CSRF-TOKEN", // Add this
+  xsrfCookieName: "csrf_token",
+  xsrfHeaderName: "X-CSRF-TOKEN",
 });
+
+// Get today's menu from local backend
+export const getTodayMenu = async (): Promise<any> => {
+  const response = await api.get("/menu/today");
+  return response.data;
+};
 
 export default api;

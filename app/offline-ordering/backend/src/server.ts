@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { buildApp } from "./app";
 import connectDB from "./database/connections/localDB.connection";
+import { cloudDB } from "./database/connections/cloudDB.connection";
 
 // Handle WebSocket pre-connection errors when cloud server is sleeping
 process.on("uncaughtException", (err: Error) => {

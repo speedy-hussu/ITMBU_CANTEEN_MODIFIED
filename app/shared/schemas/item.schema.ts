@@ -11,10 +11,6 @@ const itemSchema = {
     type: String,
     required: true,
   },
-  stock: {
-    type: Number,
-    required: true,
-  },
   isAvailable: {
     type: Boolean,
     default: false,

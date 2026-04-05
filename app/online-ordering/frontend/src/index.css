@@ -181,11 +181,10 @@
   }
 
   .scrollbar-none {
-    -ms-overflow-style: none;   /* IE & Edge */
-    scrollbar-width: none;      /* Firefox */
+    -ms-overflow-style: none; /* IE & Edge */
+    scrollbar-width: none; /* Firefox */
   }
   .backdrop-blur-5 {
     backdrop-filter: blur(20px);
   }
-
 }

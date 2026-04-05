@@ -31,7 +31,7 @@ export const loginUser = async (
 
 export const getUserItems = async (): Promise<any> => {
   const response = await api.get("/items");
-  return response.data
+  return response.data;
 };
 export const getMe = async (): Promise<any> => {
   const response = await api.get("/auth/me");
@@ -75,7 +75,6 @@ export const fetchAdminItems = async (): Promise<any> => {
 
 export const createItem = async (itemData: {
   name: string;
-  description: string;
   price: number;
   isAvailable: boolean;
 }): Promise<any> => {
@@ -87,7 +86,6 @@ export const updateItem = async (
   itemId: string,
   itemData: {
     name: string;
-    description: string;
     price: number;
     isAvailable: boolean;
   },
@@ -119,6 +117,69 @@ export const updateOrderItemStatus = async (
 
 export const completeOrder = async (orderId: string): Promise<any> => {
   const response = await api.patch(`/admin/orders/${orderId}/complete`);
+  return response.data;
+};
+
+// Menu Template API Functions
+export const fetchMenuTemplates = async (): Promise<any> => {
+  const response = await api.get("/admin/menu-templates");
+  return response.data;
+};
+
+export const fetchMenuTemplatesByDay = async (day: string): Promise<any> => {
+  const response = await api.get(`/admin/menu-templates/day/${day}`);
+  return response.data;
+};
+
+// User - Get Today's Menu (fetches current day's menu templates)
+export const getTodayMenu = async (): Promise<any> => {
+  const response = await api.get("/menu/today");
+  return response.data;
+};
+
+export const createMenuTemplate = async (templateData: {
+  name: string;
+  dayOfWeek: string;
+  mealType: string;
+  items: Array<{
+    itemId: string;
+    quantity?: number;
+    specialPrice?: number;
+  }>;
+  description?: string;
+}): Promise<any> => {
+  const response = await api.post("/admin/menu-templates", templateData);
+  return response.data;
+};
+
+export const updateMenuTemplate = async (
+  templateId: string,
+  templateData: {
+    name?: string;
+    items?: Array<{
+      itemId: string;
+      quantity?: number;
+      specialPrice?: number;
+    }>;
+    description?: string;
+    isActive?: boolean;
+  },
+): Promise<any> => {
+  const response = await api.patch(
+    `/admin/menu-templates/${templateId}`,
+    templateData,
+  );
+  return response.data;
+};
+
+export const deleteMenuTemplate = async (templateId: string): Promise<any> => {
+  const response = await api.delete(`/admin/menu-templates/${templateId}`);
+  return response.data;
+};
+
+// Analytics API
+export const fetchAnalytics = async (): Promise<any> => {
+  const response = await api.get("/admin/analytics");
   return response.data;
 };
 

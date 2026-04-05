@@ -212,7 +212,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
-        <div className="min-h-[calc(100dvh-260px)] w-full max-w-3xl mx-auto px-4 pb-20">
+        <div className="min-h-[calc(100dvh-260px)] w-full max-w-6xl mx-auto px-4 pb-20">
           <Routes>
             {/* Public Routes */}
             <Route

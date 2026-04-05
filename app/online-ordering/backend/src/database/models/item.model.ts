@@ -4,8 +4,7 @@ import cloudDB from "../connections/cloudDB.connection"; // Import your connecti
 
 const itemSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true },
-    description: String,
+    name: { type: String, required: true }, 
     price: Number,
     category: { type: String, default: "Dish" },
     isAvailable: { type: Boolean, default: true },

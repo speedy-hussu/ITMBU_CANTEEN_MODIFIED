@@ -3,76 +3,64 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import ItemCard from "@/components/STUDENT/item-card";
-import { getUserItems } from "@/api/api";
+import { getTodayMenu } from "@/api/api";
 import { toast } from "sonner";
 
-export const MASTER_MENU = [
-  {
-    _id: "691f076c7e3e86ba4a0e6ed2",
-    name: "dsdw",
-    price: 2000,
-    category: "Dish",
-  },
-  {
-    _id: "6930ebb2a6bd44c4f9ff4808",
-    name: "bhaji",
-    price: 120,
-    category: "Dish",
-  },
-  {
-    _id: "6930ec22a6bd44c4f9ff4812",
-    name: "soup",
-    price: 20,
-    category: "Dish",
-  },
-  {
-    _id: "6930ec3da6bd44c4f9ff481a",
-    name: "cola",
-    price: 25,
-    category: "Product",
-  },
-  {
-    _id: "6930fe71b67d63bee3525e3b",
-    name: "dud",
-    price: 20,
-    category: "Product",
-  },
-];
 
 const categories = ["All", "Dish", "Product"];
 
 interface MenuItem {
+  itemId: string;
   _id: string;
   name: string;
   price: number;
+  originalPrice?: number;
   category: string;
-  description?: string;
   isAvailable?: boolean;
+  mealType?: string;
+  templateName?: string;
+  quantity?: number;
+}
+
+interface TodayMenuResponse {
+  day: string;
+  templates: Array<{
+    _id: string;
+    name: string;
+    mealType: string;
+    description?: string;
+  }>;
+  items: MenuItem[];
 }
 
 export default function Menu() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [todayDay, setTodayDay] = useState<string>("");
+  const [templates, setTemplates] = useState<TodayMenuResponse["templates"]>(
+    [],
+  );
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch items from API
+  // Fetch today's menu from API
   useEffect(() => {
-    const fetchItems = async () => {
+    const fetchTodayMenu = async () => {
       try {
         setIsLoading(true);
-        const response = await getUserItems();
+        const response = await getTodayMenu();
         setMenuItems(response.items || []);
+        setTodayDay(response.day || "");
+        setTemplates(response.templates || []);
       } catch (error) {
-        console.error("Failed to fetch items:", error);
-        toast.error("Failed to load menu items");
+        console.error("Failed to fetch today's menu:", error);
+        toast.error("Failed to load today's menu");
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchItems();
-    console.log(menuItems, "menu items");
+    fetchTodayMenu();
   }, []);
 
   const filteredItems = menuItems.filter((item) => {
@@ -90,9 +78,31 @@ export default function Menu() {
       <div className="bg-white sticky top-0 z-10 shadow-sm ">
         <div className="p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
-              Canteen
-            </h1>
+            <div>
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
+                Canteen
+              </h1>
+              {todayDay && (
+                <p className="text-sm text-gray-500">
+                  {todayDay}'s Special Menu
+                </p>
+              )}
+            </div>
+            {templates.length > 0 && (
+              <div className="text-right">
+                <p className="text-xs text-gray-400">Available for</p>
+                <div className="flex gap-1 flex-wrap justify-end">
+                  {templates.map((t) => (
+                    <span
+                      key={t._id}
+                      className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full"
+                    >
+                      {t.mealType}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -129,8 +139,17 @@ export default function Menu() {
           <div className="flex items-center justify-center h-40">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
           </div>
+        ) : filteredItems.length === 0 ? (
+          <div className="text-center py-12 text-white">
+            <p className="text-lg font-medium">
+              No menu available for {todayDay || "today"}
+            </p>
+            <p className="text-sm opacity-75">
+              Check back later or contact admin
+            </p>
+          </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 ">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4 lg:gap-6">
             {filteredItems.map((item) => (
               <ItemCard key={item._id} item={item} />
             ))}

@@ -68,7 +68,7 @@ export default function Cashout({ ws, canteenMode }: CartProps) {
       })),
       totalAmount: cartTotal,
     };
-
+    console.log("ORder sne tot ocal ", order)
     // ✅ Store locally (Zustand)
     addOrder(order);
 
@@ -129,11 +129,10 @@ export default function Cashout({ ws, canteenMode }: CartProps) {
           <div>
             <Button
               disabled={canteenMode !== "ONLINE"}
-              className={`w-full h-12 sm:h-14 text-base sm:text-lg font-semibold text-white transition-all ${
-                canteenMode === "ONLINE"
-                  ? "bg-orange-500 hover:bg-orange-600"
-                  : "bg-gray-400 cursor-not-allowed"
-              }`}
+              className={`w-full h-12 sm:h-14 text-base sm:text-lg font-semibold text-white transition-all ${canteenMode === "ONLINE"
+                ? "bg-orange-500 hover:bg-orange-600"
+                : "bg-gray-400 cursor-not-allowed"
+                }`}
               onClick={placeOrder}
             >
               {canteenMode === "ONLINE" ? (

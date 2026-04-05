@@ -12,6 +12,7 @@ import { registerCloudWS } from "./modules/ws/cloud-gateway";
 import authRoutes from "./modules/user/auth/auth.route";
 import { orderRoutes } from "./modules/user/orders/orders.route";
 import itemRoutes from "./modules/user/items/items.route";
+import todayMenuRoutes from "./modules/user/menu/menu.route";
 import { adminRoutes } from "./modules/admin/admin.routes";
 
 export async function buildApp(): Promise<FastifyInstance> {
@@ -70,6 +71,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   // API Routes
   await app.register(itemRoutes, { prefix: "/api/items" });
   await app.register(orderRoutes, { prefix: "/api/user/orders" });
+  await app.register(todayMenuRoutes, { prefix: "/api/menu/today" });
 
   // ========== WebSocket Routes ==========
 

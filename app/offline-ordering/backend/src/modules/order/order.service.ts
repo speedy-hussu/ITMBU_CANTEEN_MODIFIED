@@ -50,9 +50,14 @@ export class OrderService {
         token: savedOrder.token,
         enrollmentId: savedOrder.enrollmentId,
       };
-    } catch (error) {
-      console.error("[OrderService] Create Error:", error);
-      return { success: false };
+    } catch (error: any) {
+      console.error("[OrderService] Create Error:", error.message);
+      return { 
+        success: false, 
+        token: payload.token, 
+        enrollmentId: payload.enrollmentId,
+        error: error.message 
+      };
     }
   }
   async orderUpdateStatus(

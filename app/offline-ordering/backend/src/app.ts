@@ -8,6 +8,7 @@ import websocket from "@fastify/websocket";
 import { authModule } from "./modules/auth/route";
 import itemRoutes from "./modules/item/route";
 import orderRoutes from "./modules/order/route";
+import menuRoutes from "./modules/menu/menu.route";
 
 //local ws server
 import { registerLocalGateway } from "./modules/websocket/gateway/local.gateway";
@@ -26,6 +27,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(authModule, { prefix: "/api/auth" });
   await app.register(itemRoutes, { prefix: "/api/items" });
   await app.register(orderRoutes, { prefix: "/api/orders" });
+  await app.register(menuRoutes, { prefix: "/api/menu" });
 
   await app.register(registerLocalGateway);
   console.log("registered local ws");
