@@ -183,10 +183,6 @@ export const fetchAnalytics = async (): Promise<any> => {
   return response.data;
 };
 
-export const setCanteenMode = async (mode: string): Promise<any> => {
-  console.warn("setCanteenMode: Backend endpoint not implemented yet");
-  throw new Error("Not implemented");
-};
 
 export const getCanteenMode = async (): Promise<any> => {
   console.warn("getCanteenMode: Backend endpoint not implemented yet");

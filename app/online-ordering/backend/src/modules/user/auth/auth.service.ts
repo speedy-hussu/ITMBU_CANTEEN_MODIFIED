@@ -1,6 +1,6 @@
 // online/backend/src/services/auth.service.ts
 
-import { User } from "src/database/models/user.model";
+import { User } from "../../../database/models/user.model";
 
 
 export const verifyUser = async (enrollmentId: string, password: string) => {

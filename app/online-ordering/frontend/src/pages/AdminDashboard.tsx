@@ -10,14 +10,10 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Store, Moon, AlertCircle } from "lucide-react";
 
 import { useAuthStore } from "@/store/authStore";
 import {
   fetchOrders,
-  setCanteenMode,
-  getCanteenMode,
   fetchAnalytics,
 } from "@/api/api";
 
@@ -55,10 +51,7 @@ export default function AdminDashboard() {
   } | null>(null);
   
   const [orders, setOrders] = useState<Order[]>([]);
-  const [canteenMode, setCanteenModeState] = useState<
-    "ONLINE" | "OFFLINE" | "DRAINING"
-  >("OFFLINE");
-  const [isLoading, setIsLoading] = useState(false);
+ 
 
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
@@ -86,15 +79,6 @@ export default function AdminDashboard() {
     }
   }, []);
 
-  // Fetch canteen mode
-  const fetchCanteenMode = useCallback(async () => {
-    try {
-      const response = await getCanteenMode();
-      setCanteenModeState(response.mode || "OFFLINE");
-    } catch (error) {
-      console.error("Failed to fetch canteen mode:", error);
-    }
-  }, []);
 
   // Fetch analytics
   const fetchAnalyticsData = useCallback(async () => {
@@ -106,10 +90,7 @@ export default function AdminDashboard() {
     }
   }, []);
 
-  // UseEffects for data fetching
-  useEffect(() => {
-    fetchCanteenMode();
-  }, [fetchCanteenMode]);
+
 
   useEffect(() => {
     if (activeTab === "orders") {
@@ -122,22 +103,6 @@ export default function AdminDashboard() {
       fetchAnalyticsData();
     }
   }, [activeTab, fetchAnalyticsData]);
-
-  // Handle canteen mode toggle
-  const handleCanteenModeChange = async (
-    mode: "ONLINE" | "OFFLINE" | "DRAINING"
-  ) => {
-    try {
-      setIsLoading(true);
-      await setCanteenMode(mode);
-      setCanteenModeState(mode);
-      toast.success(`Canteen is now ${mode.toLowerCase()}`);
-    } catch (error: any) {
-      toast.error(error.message || "Failed to change mode");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   if (!user || user.role !== "ADMIN") {
     return null;
@@ -159,40 +124,7 @@ export default function AdminDashboard() {
             </div>
 
             <div className="flex items-center gap-4">
-              {/* Canteen Mode Indicator */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-600">
-                  Canteen:
-                </span>
-                <Badge
-                  variant={
-                    canteenMode === "ONLINE"
-                      ? "default"
-                      : canteenMode === "DRAINING"
-                      ? "secondary"
-                      : "destructive"
-                  }
-                  className={
-                    canteenMode === "ONLINE"
-                      ? "bg-green-500 hover:bg-green-600"
-                      : canteenMode === "DRAINING"
-                      ? "bg-yellow-500 hover:bg-yellow-600"
-                      : "bg-red-500 hover:bg-red-600"
-                  }
-                >
-                  {canteenMode === "ONLINE" && (
-                    <Store className="h-3 w-3 mr-1" />
-                  )}
-                  {canteenMode === "DRAINING" && (
-                    <Moon className="h-3 w-3 mr-1" />
-                  )}
-                  {canteenMode === "OFFLINE" && (
-                    <AlertCircle className="h-3 w-3 mr-1" />
-                  )}
-                  {canteenMode}
-                </Badge>
-              </div>
-
+              
               <Button
                 variant="ghost"
                 size="sm"
@@ -250,9 +182,6 @@ export default function AdminDashboard() {
           {activeTab === "dashboard" && (
             <AnalyticsTab
               analyticsData={analyticsData}
-              canteenMode={canteenMode}
-              isLoading={isLoading}
-              handleCanteenModeChange={handleCanteenModeChange}
             />
           )}
 

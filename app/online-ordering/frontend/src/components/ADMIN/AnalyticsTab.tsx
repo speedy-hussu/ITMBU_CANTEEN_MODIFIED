@@ -1,6 +1,4 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Store, Moon, Power } from "lucide-react";
 
 interface AnalyticsData {
   totalRevenue: number;
@@ -10,16 +8,10 @@ interface AnalyticsData {
 
 interface AnalyticsTabProps {
   analyticsData: AnalyticsData | null;
-  canteenMode: "ONLINE" | "OFFLINE" | "DRAINING";
-  isLoading: boolean;
-  handleCanteenModeChange: (mode: "ONLINE" | "OFFLINE" | "DRAINING") => void;
 }
 
 export default function AnalyticsTab({
   analyticsData,
-  canteenMode,
-  isLoading,
-  handleCanteenModeChange,
 }: AnalyticsTabProps) {
   return (
     <div className="space-y-6">
@@ -65,56 +57,6 @@ export default function AnalyticsTab({
         </Card>
       </div>
 
-      {/* Canteen Mode Control */}
-      <h2 className="text-xl font-bold text-gray-800 mt-10">Canteen Operations Control</h2>
-      <Card className="border-none shadow-md">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Power className="h-5 w-5 text-gradient-primary" />
-            Canteen Mode Status
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-3">
-            <Button
-              onClick={() => handleCanteenModeChange("ONLINE")}
-              disabled={isLoading || canteenMode === "ONLINE"}
-              className={`flex-1 ${
-                canteenMode === "ONLINE"
-                  ? "bg-green-500 hover:bg-green-600 text-white"
-                  : "bg-gray-200 hover:bg-gray-300 text-gray-700"
-              }`}
-            >
-              <Store className="h-4 w-4 mr-2" />
-              Online (Accepting)
-            </Button>
-            <Button
-              onClick={() => handleCanteenModeChange("DRAINING")}
-              disabled={isLoading || canteenMode === "DRAINING"}
-              className={`flex-1 ${
-                canteenMode === "DRAINING"
-                  ? "bg-orange-500 hover:bg-orange-600 text-white"
-                  : "bg-gray-200 hover:bg-gray-300 text-gray-700"
-              }`}
-            >
-              <Moon className="h-4 w-4 mr-2" />
-              Draining (No New)
-            </Button>
-            <Button
-              onClick={() => handleCanteenModeChange("OFFLINE")}
-              disabled={isLoading || canteenMode === "OFFLINE"}
-              className={`flex-1 ${
-                canteenMode === "OFFLINE"
-                  ? "bg-red-500 hover:bg-red-600 text-white"
-                  : "bg-gray-200 hover:bg-gray-300 text-gray-700"
-              }`}
-            >
-              <Power className="h-4 w-4 mr-2" />
-              Offline (Closed)
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
